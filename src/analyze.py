@@ -26,6 +26,9 @@ NAMES = {"none": "No AI", "np": "NP", "tdr": "TDR", "sbp": "SBP", "tdr25": "TDR-
          "tdrinv": "TDR-inverse", "pcc": "PCC",
          "rand3": "SBP-rand3", "div3": "SBP-div3", "randall": "SBP-rand-all", "divall": "SBP-div-all"}
 PAPER = ("np", "tdr", "sbp")
+# one colour per assistant in every figure (categorical slots of the dataviz reference palette)
+COLORS = {"np": BLUE, "tdr": AQUA, "sbp": ORANGE, "pcc": "#eda100", "tdr25": "#4a3aa7",
+          "tdrinv": "#e87ba4", "rand3": MUTED, "div3": MUTED, "randall": MUTED, "divall": MUTED}
 
 plt.rcParams.update({
     "font.size": 7, "axes.titlesize": 7, "axes.labelsize": 7, "xtick.labelsize": 6.5,
@@ -178,13 +181,8 @@ def p1(d, use_main=0.5, t_main=30):
 
     sbp_variants = [a for a in assistants if a.startswith(("rand", "div"))]
     labelled = [a for a in assistants if a not in sbp_variants]
-    col = {a: c for a, c in zip(labelled, [BLUE, AQUA, ORANGE, "#4a3aa7", "#eda100", RED, "#e87ba4"])}
-    if "sbp" in col:
-        col["sbp"] = ORANGE
-    if "np" in col:
-        col["np"] = BLUE
-    if "tdr" in col:
-        col["tdr"] = AQUA
+    col = {a: COLORS[a] for a in labelled}
+    direct = len(labelled) <= 4
 
     # Figure 1: while assisted vs after a shift with the AI off, one panel per modularity
     fig, axes = plt.subplots(1, len(rhos), figsize=(7, 2.3), constrained_layout=True)
@@ -194,15 +192,16 @@ def p1(d, use_main=0.5, t_main=30):
                   MUTED, ms=2.5, label="SBP variants" if a == sbp_variants[0] else None)
         for a in labelled:
             x, y = get(a, rho, use_main, t_main, "during"), get(a, rho, use_main, t_main, "shift_off")
-            point(ax, x, y, col[a])
-            ax.annotate(NAMES[a], (x[0], y[0]), xytext=(4, 3), textcoords="offset points", fontsize=6, color=INK2)
+            point(ax, x, y, col[a], label=NAMES[a])
+            if direct:
+                ax.annotate(NAMES[a], (x[0], y[0]), xytext=(4, 3), textcoords="offset points",
+                            fontsize=6, color=INK2)
         ax.axhline(0, color=GRID, lw=0.6, zorder=0)
         ax.axvline(0, color=GRID, lw=0.6, zorder=0)
         ax.set_title(f"Modularity ρ = {rho:g}", loc="left", color=INK)
         ax.set_xlabel(f"Fitness while assisted, rounds 1-{t_main}\n(% vs no AI)")
     axes[0].set_ylabel("Fitness after shift, AI removed\n(% vs no AI)")
-    if sbp_variants:
-        axes[0].legend(frameon=False, loc="lower right", handletextpad=0.2)
+    axes[0].legend(frameon=False, loc="upper left", handletextpad=0.2, fontsize=6)
     mark_panels(axes)
     save(fig, f"{tag}_during_vs_after")
 

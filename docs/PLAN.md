@@ -42,7 +42,7 @@ From the brainstorm, and why:
 
 Every pilot ends at a gate. We read the output and decide before starting the next one.
 
-### P0. Replicate the paper (running)
+### P0. Replicate the paper (done)
 
 The three AI designs over modularity rho 0.6-1.0 and use rate 0.125-0.875, 1000 seeds, 100
 rounds. Measures as in the paper: final fitness, early fitness, diversity AUC, each as percent
@@ -53,10 +53,10 @@ use and hurts at high use. NP cuts diversity by about 25% on average. TDR beats 
 SBP helps across modularity levels and keeps diversity at low use. If they do not come back,
 we fix the model before anything else.
 
-Status: the 50-seed dev run matches on all of these except NP's gains at rho = 0.8-0.9, which
-are smaller than the paper's. Waiting on 1000 seeds.
+Status (1000 seeds): passed. NP cuts diversity by 23.8% on average, TDR beats SBP at every use
+rate at rho = 1, SBP helps everywhere. One difference: NP's gains start at rho = 0.9, not 0.8.
 
-### P1. Help now, adapt later (running)
+### P1. Help now, adapt later (done)
 
 Same model, plus probes. At T = 10, 30, 60 and 100 we copy the community and run 30 more rounds
 in four cells: same problem or shifted problem (20% of payoff tables redrawn), AI on or off.
@@ -74,13 +74,24 @@ among near-best flips). If (1) fails, we write up a null: in this model, how an 
 looks during use is a good guide to what it leaves behind. If (1) holds and (2) fails, the
 simple rule is the result and P2 is optional.
 
-Status: the 100-seed dev run already shows (1) for the paper's own designs. TDR, the
-randomisation fix the paper proposes, is +8.5% while assisted (T = 30, rho = 0.8, use = 0.5)
-and -5% after a shift with the AI off. NP is +0.4% and -8%. The SBP variants are all positive
-on both axes and too close to separate at 100 seeds. The shift penalty grows with how much
-diversity the assistant removed by the time of the shift.
+Status (1000 seeds): (1) holds. At rho = 1, use 0.5, T = 30, NP is +23% while assisted and
+-2% after a shift with the AI off; SBP is +18% and +4%. The ranking flips in 14 settings at
+Bonferroni p < 4.4e-5, all NP ahead of an SBP-type assistant during use and behind it after.
+The shift penalty tracks diversity lost by the shift (r = 0.46 over 162 settings). (2) for the
+SBP rules: nothing to fix, SBP barely reduces diversity. Hence P1b.
 
-### P2. Train the selector (not started, gated on P1)
+### P1b. Copy-based rules (done)
+
+P1 put the effect in the assistants that copy whole modules (NP, TDR), so we ran the simple
+rules there: TDR with a wider pool (top 25%), TDR with inverse-popularity sampling, and the
+paper's personalised chunk-copy (PCC). The two TDR variants help a little (1-2 points after the
+shift). PCC is best on both axes but keeps the least of what it gives at rho = 1. The split that
+matters is a whole copied solution versus a one-step nudge. See D-010.
+
+### P2. Train the selector (not started, gated on P1; retargeted in D-011)
+
+D-011 replaces the design below: the action is full answer (PCC), nudge (SBP) or step back,
+and the learner has to beat fixed mixes of PCC and SBP. The rewards are unchanged.
 
 A selector that picks among SBP's candidate flips using a few features (fitness gain, gain
 rank, how common the agent's current choice is on that decision, round). Softmax over a linear

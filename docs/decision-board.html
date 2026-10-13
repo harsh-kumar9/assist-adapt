@@ -1,0 +1,269 @@
+<title>Help Now, Adapt Later</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column, calls first, figures on white plates that run wider than the text. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --plate: #ffffff;
+  --ink: #15191f;
+  --ink-2: #47505b;
+  --muted: #6f7883;
+  --line: #dce1e6;
+  --accent: #1f6fd1;
+  --accent-soft: #e4edf9;
+  --warm: #b4471b;
+  --warm-soft: #fbebe2;
+  --good: #16793b;
+  --good-soft: #e2f2e7;
+  --wait: #855700;
+  --wait-soft: #faefd6;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115; --surface: #171a20; --plate: #f3f4f2; --ink: #e8ebef; --ink-2: #b3bbc5;
+    --muted: #8a939e; --line: #2a3038; --accent: #5d9ef0; --accent-soft: #172539;
+    --warm: #ef8a5c; --warm-soft: #33201a; --good: #4fc277; --good-soft: #14291b;
+    --wait: #e2b04a; --wait-soft: #2d2412; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1115; --surface: #171a20; --plate: #f3f4f2; --ink: #e8ebef; --ink-2: #b3bbc5;
+  --muted: #8a939e; --line: #2a3038; --accent: #5d9ef0; --accent-soft: #172539;
+  --warm: #ef8a5c; --warm-soft: #33201a; --good: #4fc277; --good-soft: #14291b;
+  --wait: #e2b04a; --wait-soft: #2d2412; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--body); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; display: grid; gap: 56px; }
+.col { max-width: 760px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 5vw, 2.9rem); letter-spacing: -0.01em; }
+h2 { font-size: 1.5rem; margin-bottom: 14px; }
+h3 { font-size: 1.12rem; }
+p { margin: 0; }
+.stack { display: grid; gap: 12px; }
+.eyebrow { font: 500 0.75rem/1.3 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.lede { font-size: 1.12rem; color: var(--ink-2); max-width: 64ch; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* pipeline status */
+.pipeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+.stage { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; min-width: 0; }
+.stage b { font: 600 0.95rem/1.2 var(--display); }
+.stage span { font-size: 0.8rem; color: var(--ink-2); }
+.chip { justify-self: start; font: 500 0.7rem/1 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 7px; border-radius: 99px; }
+.chip.done { background: var(--good-soft); color: var(--good); }
+.chip.you { background: var(--warm-soft); color: var(--warm); }
+.chip.later { background: var(--accent-soft); color: var(--accent); }
+.chip.wait { background: var(--wait-soft); color: var(--wait); }
+
+/* answers */
+.answers { display: grid; gap: 10px; }
+.answer { display: grid; grid-template-columns: 7.5rem 1fr; gap: 4px 16px; padding: 14px 0; border-top: 1px solid var(--line); }
+.answer:last-child { border-bottom: 1px solid var(--line); }
+.answer .rq { font: 600 0.95rem/1.3 var(--display); color: var(--ink-2); }
+.answer .body { display: grid; gap: 6px; min-width: 0; }
+.verdict { font-weight: 600; }
+.answer .detail { color: var(--ink-2); font-size: 0.95rem; }
+@media (max-width: 560px) { .answer { grid-template-columns: 1fr; } }
+
+/* calls */
+.calls { display: grid; gap: 12px; }
+.call { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; min-width: 0; }
+.call.key { border-color: var(--warm); box-shadow: inset 4px 0 0 var(--warm); }
+.call header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.call .id { font: 500 0.8rem/1 var(--mono); color: var(--muted); }
+.rec { background: var(--accent-soft); border-radius: 6px; padding: 8px 10px; font-size: 0.95rem; }
+.rec b { color: var(--accent); }
+.call ul { margin: 0; padding-left: 1.1rem; color: var(--ink-2); font-size: 0.93rem; display: grid; gap: 2px; }
+.cost { font-size: 0.82rem; color: var(--muted); }
+
+/* figures */
+figure { margin: 0; display: grid; gap: 10px; }
+.plate { background: var(--plate); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; }
+.plate img { display: block; width: 100%; min-width: 620px; height: auto; }
+figcaption { font-size: 0.9rem; color: var(--ink-2); max-width: 82ch; }
+figcaption b { color: var(--ink); }
+
+/* tables */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 0.8rem/1.3 var(--mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pos { color: var(--good); }
+.neg { color: var(--warm); }
+
+footer { font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 6px; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<main class="wrap">
+  <header class="stack col">
+    <div class="eyebrow">assist-adapt · decision board · 13 Oct 2026</div>
+    <h1>Help now, adapt later</h1>
+    <p class="lede">Can an AI assistant make a community better at today's problem while leaving it worse at the next one? We test it in the NK model of Fazelpour, O'Brien &amp; Rubin (2026). After some rounds with an assistant, the problem changes and the assistant goes away. We measure how the community does next.</p>
+  </header>
+
+  <section class="stack" aria-label="Pipeline status">
+    <div class="pipeline">
+      <div class="stage"><span class="chip done">Done</span><b>P0 Replicate</b><span>Paper's model and three AI designs, 1000 seeds</span></div>
+      <div class="stage"><span class="chip done">Done</span><b>P1 Probes</b><span>Shift and withdrawal after 10 to 100 assisted rounds</span></div>
+      <div class="stage"><span class="chip done">Done</span><b>P1b Copy rules</b><span>Simple fixes where P1 found the effect</span></div>
+      <div class="stage"><span class="chip you">Your call</span><b>P2 Learned selector</b><span>Same assistant, three rewards</span></div>
+      <div class="stage"><span class="chip later">Later</span><b>P3 LLM or people</b><span>GRPO on mira/vega, or a browser study</span></div>
+    </div>
+  </section>
+
+  <section class="col">
+    <h2>Where it stands</h2>
+    <div class="answers">
+      <div class="answer">
+        <div class="rq">RQ1 · Replication</div>
+        <div class="body">
+          <p class="verdict">Our build reproduces the paper.</p>
+          <p class="detail">NP cuts diversity by 23.8% on average (paper: 25%), helps only at high modularity and low use, and gets worse as use rises. TDR beats SBP at every use rate when ρ = 1. SBP helps everywhere, least at ρ = 1. One difference: NP's gains start at ρ ≈ 0.9, not 0.8.</p>
+        </div>
+      </div>
+      <div class="answer">
+        <div class="rq">RQ2 · Help now vs later</div>
+        <div class="body">
+          <p class="verdict">How an assistant looks while in use is a poor guide to what it leaves behind.</p>
+          <p class="detail">At ρ = 1, use 0.5, after 30 rounds: NP is +23% while assisted and −2% after a shift with the AI gone. SBP is +18% and +4%. The ranking flips in 14 settings at Bonferroni p &lt; 4.4×10⁻⁵, all of them NP ahead of an SBP-type assistant during use and behind it after the shift.</p>
+        </div>
+      </div>
+      <div class="answer">
+        <div class="rq">RQ3 · Mechanism</div>
+        <div class="body">
+          <p class="verdict">The cost of a shift tracks how much diversity the assistant removed.</p>
+          <p class="detail">Across 162 settings, the shift penalty correlates with diversity lost by the time of the shift (r = 0.46). NP and TDR halve diversity in about 10 rounds at ρ = 1. SBP barely moves it. Agents never get worse at searching in this model. The gap comes only from where the assistant left them.</p>
+        </div>
+      </div>
+      <div class="answer">
+        <div class="rq">RQ4 · Simple fixes</div>
+        <div class="body">
+          <p class="verdict" id="rq4-verdict">Sampling tweaks barely help. The trade-off is a whole copied solution versus a one-step nudge.</p>
+          <p class="detail" id="rq4-detail">Choosing among SBP's flips changes nothing, since SBP hardly reduces diversity. Widening TDR's pool or favouring rarer modules adds 1 to 2 points after the shift. PCC, the paper's personalised copy, is best on both axes, but at ρ = 1 it keeps +5% of a +44% gain while SBP keeps +4% of +18%. Every assistant that copies a whole module halves diversity at ρ = 1 (shift penalty vs diversity lost, r = 0.63).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="col">
+    <h2>Calls for you</h2>
+    <p style="color:var(--ink-2);margin-bottom:14px">Reply in chat with the ID and yes, no, or a change. Everything here is logged as proposed in <code>docs/DECISIONS.md</code>.</p>
+    <div class="calls">
+
+      <article class="call key">
+        <header><span class="id">G-1</span><h3>Go to P2, aimed at the copy-versus-nudge trade-off?</h3></header>
+        <p class="rec"><b>Recommend yes.</b> P1 and P1b both pass gate (1), and the simple rules leave a gap. The P2 written before the results (D-008) targets SBP's flips, where there is nothing to find, so it gets replaced by D-011.</p>
+        <ul>
+          <li>Alternative: stop here and write P0 to P1b up as a short paper on evaluation (how an assistant looks during use versus what it leaves behind).</li>
+          <li>Alternative: run the robustness sweep below first and start P2 after.</li>
+        </ul>
+        <p class="cost">Cost: about a day to build P2. CPU only on ada; one training run should take minutes to an hour.</p>
+      </article>
+      <article class="call">
+        <header><span class="id">D-011</span><h3>P2 design: full answer, nudge, or step back</h3></header>
+        <p class="rec"><b>Recommend.</b> On each query the assistant picks PCC (a full answer), SBP (a nudge) or nothing (the agent explores). Linear softmax policy over six features, about 15 parameters, fit with an evolution strategy. Rewards: R_now (fitness while assisted), R_long (plus 30 more rounds with the AI), R_adapt (plus fitness after a shift with the AI off). Train on seeds 0–799, test on 800–999, a 50% shift and an unseen use rate.</p>
+        <ul>
+          <li>Simple rules the learner has to beat: always PCC, always SBP, PCC with probability 0.25 / 0.5 / 0.75, and PCC for the first k rounds then SBP.</li>
+          <li>Alternative: a neural policy with PPO. Heavier and harder to read. Only if the linear one is clearly too weak.</li>
+          <li>The action set maps onto LLM help (write it for me, suggest an edit, let me try), which is what a P3 GRPO run would train.</li>
+        </ul>
+      </article>
+      <article class="call">
+        <header><span class="id">D-003</span><h3>Parameters the paper leaves open</h3></header>
+        <p class="rec"><b>Recommend accepting, plus one robustness sweep.</b> Network density p_edge = 0.05, fitness scale (f/max)^8, synchronous updates. Our NP gains start at ρ ≈ 0.9 rather than 0.8, which network density could explain. Rerun P1b with p_edge = 0.1, a 50% shift, and K = 5 alongside P2.</p>
+        <ul>
+          <li>Alternative: email Fazelpour for their code and settings before going further.</li>
+        </ul>
+        <p class="cost">Cost: three P1b-sized sweeps, about 15 minutes on ada.</p>
+      </article>
+      <article class="call">
+        <header><span class="id">D-004 · D-006</span><h3>The probe and its outcome measure</h3></header>
+        <p class="rec"><b>Recommend accepting as run.</b> The shift redraws the payoff tables of 4 of 20 decisions, picked at random and independent of the run. We watch 30 rounds after the probe. The primary cell is shifted problem with the AI off, scored as absolute fitness, so an assistant cannot look good by leaving people with worse starting points.</p>
+      </article>
+      <article class="call">
+        <header><span class="id">D-010</span><h3>The P1b rules (already run)</h3></header>
+        <p class="rec"><b>Ratify after the fact.</b> I ran TDR-25%, TDR-inverse and PCC because P1 put the effect in the copy-based assistants. They took 5 minutes on ada and settled the gate, so I did not wait for a ruling.</p>
+      </article>
+      <article class="call">
+        <header><span class="id">D-009</span><h3>P3: LLM or people</h3></header>
+        <p class="rec"><b>Decide after P2. My lean is people.</b> A browser version of the task (10 unaided trials, 30 assisted, 20 unaided on a shifted problem), communities as the unit, following your 2024 creativity design. The GPU option is GRPO on Qwen3.5-9B on mira/vega, choosing the help mode with R_now versus R_adapt.</p>
+      </article>
+      <article class="call">
+        <header><span class="id">Repo</span><h3>GitHub</h3></header>
+        <p class="rec">The repo is local git only. If you create <code>github.com/harsh-kumar9/assist-adapt</code> (or tell me another name), I will push it.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="stack">
+    <h2 class="col">Results</h2>
+
+    <figure>
+      <div class="plate"><img src="figures/p0_replication.png" alt="Heatmaps of percent change versus no AI for NP, TDR and SBP across modularity and use rate: final fitness, early fitness and diversity AUC."></div>
+      <figcaption><b>P0. Replication.</b> Percent difference from the no-AI community on the same seed, 1000 seeds per cell. Rows: fitness at round 100, mean fitness in rounds 1–10, and area under mean pairwise Hamming distance. Grey cells: paired t-test p ≥ .05. K = 9, H = 10, p_social = 0.1.</figcaption>
+    </figure>
+    <figure>
+      <div class="plate"><img src="figures/p1_during_vs_after.png" alt="Scatter of fitness while assisted against fitness after a shift with the AI removed, one panel per modularity, for NP, TDR, SBP and SBP variants."></div>
+      <figcaption><b>P1. While assisted versus after.</b> One point per assistant at use rate 0.5 after 30 assisted rounds. x: mean fitness over rounds 1–30. y: mean fitness over the 30 rounds after 20% of payoff tables are redrawn and the AI is removed. Both are % versus no AI, with 95% CIs from paired differences, 1000 seeds. Grey: SBP with random or diversity-seeking choice among the 3 or all improving flips. At ρ = 1, NP ranks second on x and last on y.</figcaption>
+    </figure>
+    <figure>
+      <div class="plate"><img src="figures/p1b_during_vs_after.png" alt="Same scatter for the copy-based rules: NP, TDR, TDR-25%, TDR-inverse, PCC and SBP at modularity 0.8, 0.9 and 1."></div>
+      <figcaption><b>P1b. Copy-based rules.</b> Same axes as P1, at ρ = 0.8, 0.9 and 1. TDR-25% widens the copy pool to the top 25%. TDR-inverse draws top-10% agents with probability proportional to 1 / (agents already using that module). PCC tries every peer's module in the asker's context.</figcaption>
+    </figure>
+    <figure>
+      <div class="plate"><img src="figures/p1b_mechanism.png" alt="Four panels: diversity over rounds, the four probe cells after 30 rounds, after-shift fitness by exposure length, and shift penalty against diversity lost."></div>
+      <figcaption><b>Mechanism.</b> (a) Mean pairwise Hamming distance over rounds at ρ = 1, use 0.5. (b) Fitness over the 30 rounds after the probe at T = 30 in all four cells (same or shifted problem, AI on or off). (c) Fitness after a shift with the AI off by number of assisted rounds. (d) Each point is one assistant × ρ × use × T &lt; 100 setting: the shift penalty (shifted minus same problem, AI off, in points) against diversity at the shift relative to no AI. Line: least squares, r = 0.63.</figcaption>
+    </figure>
+  </section>
+
+  <section class="col">
+    <h2>What we kept and what we dropped</h2>
+    <p style="color:var(--ink-2);margin-bottom:14px">Each dropped piece adds an assumption the result would then restate. They can come back one at a time once the first result holds.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Kept</th><th>Dropped for now</th></tr></thead>
+        <tbody>
+          <tr><td>The paper's model unchanged: N = 20, M = 10, K = 9, H = 10, 100 agents, p_social = 0.1</td><td>Skill decay, forgetting, preference change</td></tr>
+          <tr><td>One probe: shift the problem, remove the AI, watch 30 rounds</td><td>Assistant retraining on community outputs, shared archives, cultural transmission</td></tr>
+          <tr><td>One lever: how the assistant picks among good suggestions</td><td>LLM-simulated people (they homogenise on their own)</td></tr>
+          <tr><td>Rewards the simulator computes exactly</td><td>Learned reward models, LLM judges, option-value and empowerment formulas</td></tr>
+          <tr><td>One parameter setting from the paper</td><td>Big factorial over network type, H, K, p_social</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="col">
+    <h2>Pilots and gates</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Pilot</th><th>What runs</th><th>Gate</th></tr></thead>
+        <tbody>
+          <tr><td>P0</td><td>Paper's designs over ρ 0.6–1 and use 0.125–0.875</td><td>Paper's findings come back. <b>Passed.</b></td></tr>
+          <tr><td>P1</td><td>Shift and withdrawal probes at T = 10, 30, 60, 100; SBP selection rules</td><td>An assistant helps during use but not after, CIs excluding zero. <b>Passed.</b> SBP rules: nothing to fix.</td></tr>
+          <tr><td>P1b</td><td>Copy-based rules at ρ 0.8–1</td><td>A simple rule closes NP's gap. <b>Not closed.</b> Sampling tweaks add 1–2 points; the copy-versus-nudge split remains.</td></tr>
+          <tr><td>P2</td><td>Learned copy-source selector, rewards R_now, R_long, R_adapt, held-out landscapes</td><td>R_adapt beats R_long and the best simple rule at matched help during use</td></tr>
+          <tr><td>P3</td><td>LLM assistant with GRPO on mira/vega, or a browser study with people</td><td>Pick after P2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="col">
+    <div>Repo <code>~/Desktop/assist-adapt</code> (local git) · mirror <code>/ada1/u/harsh/assist-adapt</code> · CPU sweeps on ada with <code>scripts/ada_sweep.sh</code>: P0 6 min, P1 8 min, P1b 5 min.</div>
+    <div>Every number traces to <code>results/summary/*.csv</code>. Comparisons are paired by seed against the no-AI community on the same landscape, network and starting points; 95% CIs from paired differences.</div>
+  </footer>
+</main>

@@ -119,3 +119,33 @@ Gate (1) holds: how an assistant looks while in use does not predict what it lea
 and the ranking flips. Gate (2) for the single-flip rules: nothing to fix. Gate (2) for the
 copy rules: see P1b. P2 as written in D-008 (a selector over SBP's flips) aims at the wrong
 place and should be retargeted at the copy-based assistant.
+
+P1b outcome (1000 seeds): TDR-25% and TDR-inverse add 1-2 points after the shift at the same
+help during use, and cut TDR's "worse after shift" settings from 3 to 2. They do not remove the
+shift penalty at rho = 1. PCC is best on both axes everywhere, but at rho = 1 it keeps the least
+of what it gives (use 0.5, T = 30: +43.6% while assisted, +5.3% after the shift, a 12.6-point
+shift penalty versus 3.8 for SBP). Every design that copies a whole computational module
+roughly halves diversity at rho = 1. Across all P1b settings the shift penalty correlates with
+diversity lost at the shift, r = 0.63. The split that matters is copying a whole solution
+versus a one-step nudge, not how the copy source is sampled.
+
+## D-011 P2 retargeted: full answer, nudge, or step back (proposed, replaces D-008)
+
+Each time an agent asks, the assistant picks one of three actions:
+
+- full answer: PCC, the peer computational module that is best in this agent's context;
+- nudge: SBP, the best single flip;
+- step back: no suggestion, the agent explores on its own this round.
+
+Policy: softmax over a linear score of six features (round, population diversity, the agent's
+fitness rank, gain from the full answer, gain from the nudge, how many agents already hold the
+full-answer module). About 15 parameters, fit with an evolution strategy. Rewards R_now, R_long,
+R_adapt as in D-008. Baselines the learner has to beat: always PCC, always SBP, fixed mixes
+(PCC with probability 0.25 / 0.5 / 0.75, else SBP), and a schedule (PCC for the first k rounds,
+then SBP). Train on seeds 0-799, test on 800-999; also test on a 50% shift and an unseen use
+rate. rho in {0.8, 0.9, 1.0}. CPU on ada.
+
+Why: P1b shows the trade-off sits between full answers and nudges. The mixes and the schedule
+are the simple rules; if one of them already matches the learned policy, that rule is the
+result. The action set also maps onto LLM assistance (write it for me, suggest an edit, let
+me try), which is what a P3 GRPO run would train.
