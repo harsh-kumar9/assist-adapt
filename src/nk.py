@@ -47,16 +47,28 @@ def realised_rho(deps, M):
 
 
 def raw_fitness_table(deps, tables):
-    """Mean contribution over decisions, for every code in [0, 2^N)."""
+    """Mean contribution over decisions, for every code in [0, 2^N).
+
+    Decision i's table index has bit i as its top bit, then deps[i][0], ..., deps[i][K-1].
+    We split the code into a high and a low half: each half fills its own bits of the index,
+    so the index for every code is an outer OR of two small maps. Row h, column l of `total`
+    is code h * 2^n_lo + l, which is the C-order ravel.
+    """
     N, K = deps.shape
-    codes = np.arange(2 ** N, dtype=np.int64)
-    total = np.zeros(2 ** N, dtype=np.float64)
+    n_lo = N // 2
+    lo = np.arange(2 ** n_lo, dtype=np.int64)
+    hi = np.arange(2 ** (N - n_lo), dtype=np.int64)
+    total = np.zeros((len(hi), len(lo)), dtype=np.float64)
     for i in range(N):
-        idx = (codes >> i) & 1
-        for c in deps[i]:
-            idx = (idx << 1) | ((codes >> c) & 1)
-        total += tables[i][idx]
-    return total / N
+        lo_map, hi_map = np.zeros_like(lo), np.zeros_like(hi)
+        for pos, c in enumerate([i, *deps[i]]):
+            shift = K - pos
+            if c < n_lo:
+                lo_map |= ((lo >> c) & 1) << shift
+            else:
+                hi_map |= ((hi >> (c - n_lo)) & 1) << shift
+        total += tables[i][hi_map[:, None] | lo_map[None, :]]
+    return total.ravel() / N
 
 
 def transform(raw):
