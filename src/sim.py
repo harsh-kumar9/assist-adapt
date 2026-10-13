@@ -65,8 +65,8 @@ def mean_pairwise_hamming(codes, N):
 # The agent adopts it only if it is strictly better (same rule as the paper).
 
 def parse_assistant(name, M):
-    """'none' | 'np' | 'tdr' | 'sbp' | 'rand<q>' | 'div<q>' (q an int or 'all')."""
-    if name in ("none", "np", "tdr", "sbp"):
+    """'none' | 'np' | 'tdr' | 'tdr25' | 'tdrinv' | 'pcc' | 'sbp' | 'rand<q>' | 'div<q>' (q an int or 'all')."""
+    if name in ("none", "np", "tdr", "tdr25", "tdrinv", "pcc", "sbp"):
         return name, 1
     for mode in ("rand", "div"):
         if name.startswith(mode):
@@ -81,12 +81,32 @@ def propose_np(codes, fit, mc, idx, u):
     return (codes[idx] & ~mc) | (best & mc)
 
 
-def propose_tdr(codes, fit, mc, idx, u):
-    """Top-decile randomised: computational module of a random top-10% agent (section 5.1.1)."""
-    n_top = int(np.ceil(TOP_DECILE * len(codes)))
+def propose_tdr(codes, fit, mc, idx, u, frac=TOP_DECILE):
+    """Top-decile randomised: computational module of a random top-10% agent (section 5.1.1).
+    tdr25 widens the pool to the top 25% (D-010)."""
+    n_top = int(np.ceil(frac * len(codes)))
     top = np.argpartition(-fit, n_top - 1)[:n_top]
     src = codes[top[(u * n_top).astype(np.int64)]]
     return (codes[idx] & ~mc) | (src & mc)
+
+
+def propose_tdrinv(codes, fit, mc, idx, u):
+    """TDR with inverse-popularity sampling (D-010): draw a top-10% agent with probability
+    proportional to 1 / (number of agents already using its computational module)."""
+    n_top = int(np.ceil(TOP_DECILE * len(codes)))
+    top = np.argpartition(-fit, n_top - 1)[:n_top]
+    mods = codes[top] & mc
+    count = ((codes & mc)[None, :] == mods[:, None]).sum(1)
+    cdf = np.cumsum(1.0 / count)
+    pick = np.minimum(np.searchsorted(cdf / cdf[-1], u, side="right"), n_top - 1)
+    return (codes[idx] & ~mc) | (mods[pick])
+
+
+def propose_pcc(codes, fit, F, mc, idx):
+    """Personalised chunk-copy (paper appendix A.1): try every agent's computational module in
+    the querier's own context and return the best one."""
+    cand = (codes[idx][:, None] & ~mc) | (codes[None, :] & mc)
+    return cand[np.arange(len(idx)), np.argmax(F[cand], 1)]
 
 
 def propose_single_flip(codes, fit, F, M, idx, u, mode, q):
@@ -128,6 +148,12 @@ def propose(assistant, codes, fit, F, M, idx, u):
         return propose_np(codes, fit, mc, idx, u)
     if mode == "tdr":
         return propose_tdr(codes, fit, mc, idx, u)
+    if mode == "tdr25":
+        return propose_tdr(codes, fit, mc, idx, u, frac=0.25)
+    if mode == "tdrinv":
+        return propose_tdrinv(codes, fit, mc, idx, u)
+    if mode == "pcc":
+        return propose_pcc(codes, fit, F, mc, idx)
     return propose_single_flip(codes, fit, F, M, idx, u, mode, q)
 
 

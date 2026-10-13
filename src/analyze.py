@@ -22,7 +22,8 @@ from scipy import stats  # noqa: E402
 INK, INK2, MUTED, GRID = "#0b0b0b", "#52514e", "#898781", "#e1e0d9"
 BLUE, ORANGE, AQUA, RED, NEUTRAL = "#2a78d6", "#eb6834", "#1baf7a", "#e34948", "#f0efec"
 DIVERGING = LinearSegmentedColormap.from_list("rb", [RED, NEUTRAL, BLUE])
-NAMES = {"none": "No AI", "np": "NP", "tdr": "TDR", "sbp": "SBP",
+NAMES = {"none": "No AI", "np": "NP", "tdr": "TDR", "sbp": "SBP", "tdr25": "TDR-25%",
+         "tdrinv": "TDR-inverse", "pcc": "PCC",
          "rand3": "SBP-rand3", "div3": "SBP-div3", "randall": "SBP-rand-all", "divall": "SBP-div-all"}
 PAPER = ("np", "tdr", "sbp")
 
@@ -130,12 +131,14 @@ def p1_values(data, cfg):
     return T, during, post
 
 
-def p1(d, rho_main=0.8, use_main=0.5):
+def p1(d, use_main=0.5, t_main=30):
+    tag = os.path.basename(os.path.normpath(d))
     data, cfg = load(d)
     T, during, post = p1_values(data, cfg)
     shifts = [float(s) for s in cfg["shifts"].split(",")]
     li_same, li_shift = shifts.index(0.0), shifts.index(0.2)
     rhos = sorted(set(data["rho"].tolist()))
+    rho_main = max(rhos)
     uses = sorted({u for a, u in cfg["cells"] if a != "none"})
     assistants = [a for a in cfg["assistants"].split(",")]
     none = cfg["cells"].index(("none", 0.0))
@@ -161,7 +164,8 @@ def p1(d, rho_main=0.8, use_main=0.5):
                     out["div_abs"] = float(data["div"][sel, c, t].mean() - data["div"][sel, none, t].mean())
                     out["shift_penalty"] = out["shift_off"] - out["same_off"]
                     rows.append(out)
-    write_rows(rows, "p1_probes")
+    write_rows(rows, f"{tag}_probes")
+    p1_reversals(tag, data, cfg, T, during, post, li_same, li_shift, rhos, uses, assistants)
 
     def get(a, rho, u, t, key):
         r = next(r for r in rows if (r["assistant"], r["rho"], r["use"], r["T"]) == (a, rho, u, t))
@@ -172,73 +176,78 @@ def p1(d, rho_main=0.8, use_main=0.5):
                     fmt=marker, ms=ms, color=col, ecolor=col, elinewidth=0.6, capsize=0,
                     mec="#fcfcfb", mew=0.5, label=label)
 
-    variants = [a for a in assistants if a not in PAPER]
+    sbp_variants = [a for a in assistants if a.startswith(("rand", "div"))]
+    labelled = [a for a in assistants if a not in sbp_variants]
+    col = {a: c for a, c in zip(labelled, [BLUE, AQUA, ORANGE, "#4a3aa7", "#eda100", RED, "#e87ba4"])}
+    if "sbp" in col:
+        col["sbp"] = ORANGE
+    if "np" in col:
+        col["np"] = BLUE
+    if "tdr" in col:
+        col["tdr"] = AQUA
 
-    # Figure 1: during vs after (shift, AI off), one panel per exposure length T
-    fig, axes = plt.subplots(1, len(T), figsize=(7, 2.1), constrained_layout=True)
-    for ax, t in zip(axes, T):
-        for a in assistants:
-            x = get(a, rho_main, use_main, t, "during")
-            y = get(a, rho_main, use_main, t, "shift_off")
-            if a in PAPER:
-                point(ax, x, y, BLUE)
-                ax.annotate(NAMES[a], (x[0], y[0]), xytext=(3, 3), textcoords="offset points",
-                            fontsize=6, color=INK2)
-            else:
-                point(ax, x, y, ORANGE, ms=2.5, label="SBP variants" if a == variants[0] else None)
+    # Figure 1: while assisted vs after a shift with the AI off, one panel per modularity
+    fig, axes = plt.subplots(1, len(rhos), figsize=(7, 2.3), constrained_layout=True)
+    for ax, rho in zip(axes, rhos):
+        for a in sbp_variants:
+            point(ax, get(a, rho, use_main, t_main, "during"), get(a, rho, use_main, t_main, "shift_off"),
+                  MUTED, ms=2.5, label="SBP variants" if a == sbp_variants[0] else None)
+        for a in labelled:
+            x, y = get(a, rho, use_main, t_main, "during"), get(a, rho, use_main, t_main, "shift_off")
+            point(ax, x, y, col[a])
+            ax.annotate(NAMES[a], (x[0], y[0]), xytext=(4, 3), textcoords="offset points", fontsize=6, color=INK2)
         ax.axhline(0, color=GRID, lw=0.6, zorder=0)
         ax.axvline(0, color=GRID, lw=0.6, zorder=0)
-        ax.set_title(f"{t} assisted rounds", loc="left", color=INK)
-        ax.set_xlabel("Fitness while assisted\n(% vs no AI)")
+        ax.set_title(f"Modularity ρ = {rho:g}", loc="left", color=INK)
+        ax.set_xlabel(f"Fitness while assisted, rounds 1-{t_main}\n(% vs no AI)")
     axes[0].set_ylabel("Fitness after shift, AI removed\n(% vs no AI)")
-    axes[-1].legend(frameon=False, loc="lower right", handletextpad=0.2)
+    if sbp_variants:
+        axes[0].legend(frameon=False, loc="lower right", handletextpad=0.2)
     mark_panels(axes)
-    save(fig, "p1_during_vs_after")
+    save(fig, f"{tag}_during_vs_after")
 
-    # Figure 2: mechanism
-    fig, axes = plt.subplots(1, 4, figsize=(7.2, 2.0), constrained_layout=True)
+    # Figure 2: mechanism at the highest modularity
+    fig, axes = plt.subplots(1, 4, figsize=(7.2, 2.1), constrained_layout=True)
     sel = data["rho"] == rho_main
-    show = ["none", "np", "tdr", "sbp"]
-    cols = {"none": MUTED, "np": BLUE, "tdr": AQUA, "sbp": ORANGE}
+    show = ["none"] + labelled
     ax = axes[0]
     for a in show:
         c = none if a == "none" else cfg["cells"].index((a, use_main))
         m = data["div"][sel, c].mean(0)
-        ax.plot(np.arange(len(m)), m, lw=1.2, color=cols[a], label=NAMES[a])
+        ax.plot(np.arange(len(m)), m, lw=1.1, color=MUTED if a == "none" else col[a], label=NAMES[a])
     ax.set_xlabel("Round")
     ax.set_ylabel("Mean pairwise Hamming distance")
-    ax.set_title("Diversity", loc="left", color=INK)
-    ax.legend(frameon=False, loc="upper right", handlelength=1.2)
+    ax.set_title(f"Diversity, ρ = {rho_main:g}", loc="left", color=INK)
+    ax.legend(frameon=False, loc="upper right", handlelength=1.0)
     ax = axes[1]
     keys = [("same_on", "same\nAI on"), ("same_off", "same\nAI off"),
             ("shift_on", "shift\nAI on"), ("shift_off", "shift\nAI off")]
-    t_main = 30 if 30 in T else T[len(T) // 2]
+    k_off = (len(labelled) - 1) / 2
     for k, (key, lab) in enumerate(keys):
-        for j, a in enumerate(show[1:]):
+        for j, a in enumerate(labelled):
             y, lo, hi = get(a, rho_main, use_main, t_main, key)
-            ax.errorbar(k + (j - 1) * 0.2, y, yerr=[[y - lo], [hi - y]], fmt="o", ms=3, color=cols[a],
+            ax.errorbar(k + (j - k_off) * 0.13, y, yerr=[[y - lo], [hi - y]], fmt="o", ms=2.5, color=col[a],
                         elinewidth=0.6, capsize=0)
     ax.axhline(0, color=GRID, lw=0.6, zorder=0)
     ax.set_xticks(range(4), [l for _, l in keys])
-    ax.set_ylabel(f"Fitness, next 30 rounds\n(% vs no AI)")
+    ax.set_ylabel("Fitness, next 30 rounds\n(% vs no AI)")
     ax.set_title(f"Probes after {t_main} rounds", loc="left", color=INK)
     ax = axes[2]
-    for a in show[1:]:
+    for a in labelled:
         ys = [get(a, rho_main, use_main, t, "shift_off") for t in T]
         ax.errorbar(T, [y[0] for y in ys], yerr=[[y[0] - y[1] for y in ys], [y[2] - y[0] for y in ys]],
-                    fmt="-o", ms=3, lw=1, color=cols[a], elinewidth=0.6, capsize=0)
+                    fmt="-o", ms=2.5, lw=1, color=col[a], elinewidth=0.6, capsize=0)
     ax.axhline(0, color=GRID, lw=0.6, zorder=0)
     ax.set_xlabel("Assisted rounds before shift")
     ax.set_ylabel("Fitness after shift, AI removed\n(% vs no AI)")
     ax.set_title("Exposure length", loc="left", color=INK)
     ax = axes[3]
-    fam = {a: (cols.get(a, RED)) for a in assistants}
-    for r in rows:
-        if r["T"] == 100:
-            continue
-        ax.plot(r["div_abs"], r["shift_penalty"], "o", ms=2, color=fam[r["assistant"]], alpha=0.7, mew=0)
-    xs = np.array([r["div_abs"] for r in rows if r["T"] != 100])
-    ys = np.array([r["shift_penalty"] for r in rows if r["T"] != 100])
+    pts = [r for r in rows if r["T"] != 100]
+    for r in pts:
+        ax.plot(r["div_abs"], r["shift_penalty"], "o", ms=2, mew=0, alpha=0.7,
+                color=col.get(r["assistant"], MUTED))
+    xs = np.array([r["div_abs"] for r in pts])
+    ys = np.array([r["shift_penalty"] for r in pts])
     b = np.polyfit(xs, ys, 1)
     xx = np.linspace(xs.min(), xs.max(), 10)
     ax.plot(xx, np.polyval(b, xx), color=INK2, lw=0.8)
@@ -248,28 +257,85 @@ def p1(d, rho_main=0.8, use_main=0.5):
     ax.axvline(0, color=GRID, lw=0.6, zorder=0)
     ax.set_xlabel("Diversity at shift\n(Hamming, vs no AI)")
     ax.set_ylabel("Shift penalty\n(shift minus same, AI off, pp)")
-    ax.set_title("All cells, T < 100", loc="left", color=INK)
+    ax.set_title("All settings, T < 100", loc="left", color=INK)
     mark_panels(axes)
-    save(fig, "p1_mechanism")
+    save(fig, f"{tag}_mechanism")
 
-    # Figure 3: the SBP family up close, every rho x use at T = 30
-    fig, axes = plt.subplots(len(rhos), len(uses), figsize=(7, 1.9 * len(rhos)), constrained_layout=True)
-    markers = dict(zip(["sbp"] + variants, ["o", "s", "D", "^", "v", "P", "X"]))
-    for i, rho in enumerate(rhos):
-        for j, u in enumerate(uses):
-            ax = axes[i, j]
-            for a in ["sbp"] + variants:
-                point(ax, get(a, rho, u, t_main, "during"), get(a, rho, u, t_main, "shift_off"),
-                      BLUE if a == "sbp" else ORANGE, ms=3, marker=markers[a],
-                      label=NAMES[a] if (i, j) == (0, 0) else None)
-            ax.set_title(f"ρ = {rho:g}, use = {u:g}", loc="left", color=INK)
-            if i == len(rhos) - 1:
-                ax.set_xlabel("Fitness while assisted (% vs no AI)")
-            if j == 0:
-                ax.set_ylabel("After shift, AI off\n(% vs no AI)")
-    fig.legend(*axes[0, 0].get_legend_handles_labels(), loc="outside lower center", ncol=5, frameon=False)
-    mark_panels(axes.ravel())
-    save(fig, "p1_sbp_family")
+
+def p1_reversals(tag, data, cfg, T, during, post, li_same, li_shift, rhos, uses, assistants):
+    """Ranking flips between assistants: A beats B while assisted (paired p < .05) but B beats A
+    after a shift with the AI off (paired p < .05). Same rho, use and T for both."""
+    rows = []
+    for rho in rhos:
+        sel = data["rho"] == rho
+        for u in uses:
+            for ti, t in enumerate(T[:-1] if T[-1] == 100 else T):
+                for a in assistants:
+                    for b in assistants:
+                        if a == b:
+                            continue
+                        ca, cb = cfg["cells"].index((a, u)), cfg["cells"].index((b, u))
+                        d_now = during[sel, ca, ti] - during[sel, cb, ti]
+                        d_after = post[sel, cb, ti, li_shift, 0] - post[sel, ca, ti, li_shift, 0]
+                        p_now = stats.ttest_1samp(d_now, 0).pvalue
+                        p_after = stats.ttest_1samp(d_after, 0).pvalue
+                        if d_now.mean() > 0 and p_now < .05 and d_after.mean() > 0 and p_after < .05:
+                            rows.append(dict(better_now=a, better_after=b, rho=rho, use=u, T=t,
+                                             now_gap=float(d_now.mean()), after_gap=float(d_after.mean()),
+                                             p_now=float(p_now), p_after=float(p_after)))
+    if rows:
+        write_rows(rows, f"{tag}_reversals")
+    else:
+        print("no ranking flips")
+    return rows
+
+
+def p1_gate(tag="p1"):
+    """Gate numbers for P1 -> P2, written to results/summary/p1_gate.md.
+
+    Dissociation: fitness while assisted is significantly above no AI (p < .05) while fitness
+    after a shift with the AI off is significantly below no AI. Counted over rho x use x T<100.
+    """
+    import csv
+    rows = list(csv.DictReader(open(f"results/summary/{tag}_probes.csv")))
+    for r in rows:
+        for k, v in r.items():
+            if k != "assistant":
+                r[k] = float(v)
+    out = ["| assistant | settings | helpful while assisted | worse after shift, AI off | both (dissociation) |",
+           "|---|---|---|---|---|"]
+    assistants = list(dict.fromkeys(r["assistant"] for r in rows))
+    for a in assistants:
+        rs = [r for r in rows if r["assistant"] == a and r["T"] < 100]
+        up = [r for r in rs if r["during"] > 0 and r["during_p"] < .05]
+        down = [r for r in rs if r["shift_off"] < 0 and r["shift_off_p"] < .05]
+        both = [r for r in up if r in down]
+        out.append(f"| {NAMES[a]} | {len(rs)} | {len(up)} | {len(down)} | {len(both)} |")
+    flips_path = f"results/summary/{tag}_reversals.csv"
+    if os.path.exists(flips_path):
+        flips = list(csv.DictReader(open(flips_path)))
+        n_tests = len(assistants) * (len(assistants) - 1) * len({(r["rho"], r["use"], r["T"]) for r in rows
+                                                                 if r["T"] < 100})
+        strict = [f for f in flips if max(float(f["p_now"]), float(f["p_after"])) < .05 / n_tests]
+        out += ["", f"Ranking flips (A beats B while assisted, B beats A after shift with AI off): "
+                    f"{len(flips)} of {n_tests} ordered pairs x settings at p < .05 on both; "
+                    f"{len(strict)} at Bonferroni p < {.05 / n_tests:.1e} on both.", ""]
+        out += ["| better while assisted | better after shift | rho | use | T | strict |", "|---|---|---|---|---|---|"]
+        for f in flips:
+            ok = max(float(f["p_now"]), float(f["p_after"])) < .05 / n_tests
+            out.append(f"| {NAMES[f['better_now']]} | {NAMES[f['better_after']]} | {f['rho']} | {f['use']} | "
+                       f"{f['T']} | {'yes' if ok else ''} |")
+    out += ["", "T = 30, after shift with AI off vs while assisted (% vs no AI):", "",
+            "| assistant | rho | use | while assisted | after shift, AI off | same problem, AI off | diversity at T (Hamming diff) |",
+            "|---|---|---|---|---|---|---|"]
+    for a in assistants:
+        for r in rows:
+            if r["assistant"] == a and r["T"] == 30:
+                f = lambda k: f"{r[k]:+.1f} [{r[k + '_lo']:+.1f}, {r[k + '_hi']:+.1f}]"
+                out.append(f"| {NAMES[a]} | {r['rho']:g} | {r['use']:g} | {f('during')} | {f('shift_off')} | "
+                           f"{f('same_off')} | {r['div_abs']:+.2f} |")
+    open(f"results/summary/{tag}_gate.md", "w").write("\n".join(out) + "\n")
+    print("\n".join(out[:len(assistants) + 2]))
 
 
 def write_rows(rows, name):
@@ -283,4 +349,7 @@ def write_rows(rows, name):
 
 
 if __name__ == "__main__":
-    {"p0": p0, "p1": p1}[sys.argv[1]](sys.argv[2])
+    if sys.argv[1] == "gate":
+        p1_gate(sys.argv[2] if len(sys.argv) > 2 else "p1")
+    else:
+        {"p0": p0, "p1": p1}[sys.argv[1]](sys.argv[2])

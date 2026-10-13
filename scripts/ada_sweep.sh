@@ -21,6 +21,10 @@ case "$NAME" in
     $PY -u -m src.run --name p1 --seeds 0:1000 --rhos 0.6,0.8,1.0 \
       --assistants np,tdr,sbp,rand3,div3,randall,divall --uses 0.25,0.5,0.75 \
       --probe-times 10,30,60,100 --shifts 0,0.2 --post-rounds 30 --workers "$W" ;;
+  p1b)  # copy-based rules where P1 found the flip (D-010)
+    $PY -u -m src.run --name p1b --seeds 0:1000 --rhos 0.8,0.9,1.0 \
+      --assistants np,tdr,tdr25,tdrinv,pcc,sbp --uses 0.25,0.5,0.75 \
+      --probe-times 10,30,60,100 --shifts 0,0.2 --post-rounds 30 --workers "$W" ;;
   *) echo "unknown sweep $NAME"; exit 1 ;;
 esac
 date

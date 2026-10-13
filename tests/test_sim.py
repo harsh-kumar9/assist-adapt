@@ -61,14 +61,31 @@ class TestSim(unittest.TestCase):
         fit = F[codes]
         idx = np.arange(100)
         u = np.random.default_rng(0).random(100)
-        for a in ("np", "tdr", "sbp", "rand3", "div3", "randall", "divall"):
+        for a in ("np", "tdr", "tdr25", "tdrinv", "pcc", "sbp", "rand3", "div3", "randall", "divall"):
             prop = propose(a, codes, fit, F, 10, idx, u)
             self.assertTrue(np.all((prop & ~mc) == (codes & ~mc)), a)  # only m_c changes
-            if a not in ("np", "tdr"):
+            if a not in ("np", "tdr", "tdr25", "tdrinv", "pcc"):
                 n_diff = np.array([bin(int(x)).count("1") for x in prop ^ codes])
                 self.assertTrue(np.all(n_diff <= 1), a)
         new = step(codes, F, self.comm, "sbp", 0.5, 0.1, 10, np.random.default_rng(0))
         self.assertTrue(np.all(F[new] >= fit))
+
+    def test_pcc_and_tdrinv(self):
+        F, mc = self.land.F, (1 << 10) - 1
+        codes = self.comm.codes0.copy()
+        fit = F[codes]
+        prop = propose("pcc", codes, fit, F, 10, np.array([3]), np.array([0.5]))
+        best = max(F[(codes[3] & ~mc) | (c & mc)] for c in codes)
+        self.assertEqual(F[prop[0]], best)
+        # inverse popularity: a module held by 90 agents is drawn far less often than one held by 1
+        c2 = np.zeros(100, dtype=np.int64)
+        c2[:10] = np.arange(10)          # ten distinct modules, all in the "top decile" by fitness below
+        c2[10:] = 0                      # module 0 is also held by the other 90 agents
+        f2 = np.r_[np.ones(10), np.zeros(90)]
+        u = np.random.default_rng(1).random(20000)
+        picks = propose("tdrinv", c2, f2, F, 10, np.zeros(20000, dtype=np.int64), u) & mc
+        share0 = np.mean(picks == 0)
+        self.assertLess(share0, 0.02)    # weight 1/91 vs 1 for each of the other nine
 
     def test_div_moves_away_from_majority(self):
         F = self.land.F

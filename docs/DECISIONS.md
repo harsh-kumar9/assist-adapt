@@ -94,3 +94,28 @@ unlikely to be worth it.
 Decide after P2. Options: (a) GRPO an LLM assistant (Qwen3.5-9B on mira/vega) on a text version
 of the task with the P2 rewards, (b) a browser version of the task with people, following the
 design of Kumar et al. 2024 (assisted rounds, then unassisted rounds on a shifted problem).
+
+## D-010 P1b: copy-based rules (proposed, run 2026-10-13)
+
+P1 at 1000 seeds put the effect in the copy-based assistants, not the single-flip ones. SBP
+barely reduces diversity, so choosing among its flips had nothing to fix. NP and TDR at rho = 1
+cut diversity by about half within 10 rounds, and NP ranks above SBP while assisted and below it
+after a shift with the AI off (14 flips at Bonferroni p < 4.4e-5, all NP vs the SBP family).
+
+So before P2 we ran the simple rules where the effect is, on the same seeds, rho in
+{0.8, 0.9, 1.0}:
+
+- TDR-25%: TDR with the pool widened to the top 25%.
+- TDR-inverse: TDR, but a top-10% agent is drawn with probability proportional to
+  1 / (number of agents already using its computational module).
+- PCC: the paper's personalised chunk-copy (appendix A.1), every agent's computational module
+  tried in the querier's context.
+
+Same candidates or a superset of TDR's, same information as the paper's designs.
+
+## G-1 Gate P1 -> P2 (proposed)
+
+Gate (1) holds: how an assistant looks while in use does not predict what it leaves behind,
+and the ranking flips. Gate (2) for the single-flip rules: nothing to fix. Gate (2) for the
+copy rules: see P1b. P2 as written in D-008 (a selector over SBP's flips) aims at the wrong
+place and should be retargeted at the copy-based assistant.
