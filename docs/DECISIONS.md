@@ -275,3 +275,12 @@ Caveat for reading recovery after shifts: after a shift the oracles often find n
 either (the converged community is often still at a local optimum in choices 1-10), so "does
 not recover" is mostly "nothing to recover". The LLM also never sees other agents, so the fair
 oracle comparison is SBP; early in problem 1 the LLM reaches ~0.6 of SBP's gain.
+
+KL arm, first two seeds complete (2026-10-14): KL to the base model brings sample variety back.
+kl_s1 never collapses (late in problems 1-4: share of askers on the most common answer 0.25,
+0.15, 0.34, 0.70; distinct answers in a group of 8: 5.3, 6.4, 4.3, 2.6). kl_s0 collapses in
+problems 1-2 (share 0.82-0.98, 1.2 distinct) and recovers in problem 3 (share 0.21, 5.5
+distinct). Reading: when rewards go to zero, the KL term pulls the model back toward the base
+model's spread, which keeps GRPO's signal alive. Its answers still rarely improve anyone late in
+a problem, because the community has converged. All 30 follow-ups (3 arms x {rho 1 seeds 2-5,
+rho 0.8 seeds 0-5}) submitted; KL ones at 04:0x UTC.
