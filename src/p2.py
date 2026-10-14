@@ -69,9 +69,32 @@ class Schedule:
         return np.full(len(X), 0 if t_frac < self.frac else 1)
 
 
+class Gated:
+    """Help only when the help would improve the asker, otherwise step back.
+    prefer: 'full', 'nudge' or 'best' (whichever gains more); p mixes full-first and nudge-first."""
+
+    def __init__(self, prefer="best", p=None, name=None):
+        self.prefer, self.p = prefer, p
+        self.name = name or (f"gated_mix{p:g}" if p is not None else f"gated_{prefer}")
+
+    def act(self, X, u, t_frac):
+        gf, gn = X[:, 4] > 0, X[:, 5] > 0
+        if self.p is not None:
+            full_first = u < self.p
+        elif self.prefer == "best":
+            full_first = X[:, 4] >= X[:, 5]
+        else:
+            full_first = np.full(len(X), self.prefer == "full")
+        a = np.where(full_first, np.where(gf, 0, np.where(gn, 1, 2)), np.where(gn, 1, np.where(gf, 0, 2)))
+        if self.prefer in ("full", "nudge") and self.p is None:  # only the preferred kind of help
+            a = np.where(full_first, np.where(gf, 0, 2), np.where(gn, 1, 2))
+        return a
+
+
 def rules():
     return [Mix(1.0, "always_full"), Mix(0.0, "always_nudge"), Mix(0.75), Mix(0.5), Mix(0.25),
-            Schedule(1 / 6), Schedule(1 / 3), Schedule(2 / 3)]
+            Schedule(1 / 6), Schedule(1 / 3), Schedule(2 / 3),
+            Gated("full"), Gated("nudge"), Gated("best"), Gated(p=0.25), Gated(p=0.5), Gated(p=0.75)]
 
 
 # ---------------------------------------------------------------- dynamics
@@ -208,6 +231,9 @@ def evaluate(args):
     for f in sorted(os.listdir(args.out)):
         if f.startswith("es_") and f.endswith(".json"):
             d = json.load(open(os.path.join(args.out, f)))
+            if len(d["log"]) < d["config"]["gens"]:
+                print("skipping unfinished", f)
+                continue
             pols.append(Linear(d["theta"], name=f[3:-5]))
     rhos = [float(r) for r in args.rhos.split(",")]
     settings = [(rho, 0.2, args.use) for rho in rhos] + [(rho, 0.5, args.use) for rho in rhos] + \

@@ -201,3 +201,19 @@ T = 30, every whole-module copier loses 2 to 6 times more to the shift than SBP.
 shift, PCC goes from +43.6% while assisted to -1.3% after and SBP is the only assistant still
 ahead of no AI (+1.8%). Bonferroni ranking flips: 6 (main), 8, 14, 16. Shift penalty vs
 diversity lost: r = 0.63, 0.52, 0.48, 0.49. The open network density does not change the result.
+
+## P3 oracle baseline (2026-10-14)
+
+Oracle assistants through the P3 driver, 300 seeds, rho = 1, use 0.5, four problems of 60
+rounds, each redrawing 20% of the last one's tables. Every community converges within the first
+problem (PCC by round 10). Fitness while assisted, % vs no AI, problems 1-4: PCC +27.8, +4.0,
+-3.6, +2.7; SBP +13.2, +5.6, +3.4, +4.1. PCC works by copying a peer's module, so once it has
+made everyone hold the same module it has nothing left to offer, and after the first problem it
+is no better than no AI. SBP proposes flips nobody holds and keeps helping. The next-problem
+AI-off probe differs by a few percent with CIs of about +-5%, so the continual effect shows up
+in fitness while assisted, not in the probe.
+
+For the LLM this sets the question sharply: an assistant whose knowledge comes from the
+community behaves like PCC and runs dry; one that keeps generating new options behaves like SBP.
+Whether an LLM trained with R_now keeps generating or collapses is what the R_now and KL arms
+measure.

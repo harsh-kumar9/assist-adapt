@@ -38,6 +38,7 @@ export TORCHINDUCTOR_CACHE_DIR=/ada1/u/harsh/.cache/torchinductor
 export CUDA_CACHE_PATH=/ada1/u/harsh/.cache/nv/ComputeCache
 export FLASHINFER_WORKSPACE_BASE=/ada1/u/harsh/.cache
 export TOKENIZERS_PARALLELISM=false
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
 mkdir -p "$TMPDIR" /ada1/u/harsh/.config logs
 

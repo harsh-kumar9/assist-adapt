@@ -65,10 +65,12 @@ class LLM:
         self.tok.padding_side = "left"
         if self.tok.pad_token is None:
             self.tok.pad_token = self.tok.eos_token
-        base = AutoModelForCausalLM.from_pretrained(args.model, dtype=torch.bfloat16).cuda()
+        base = AutoModelForCausalLM.from_pretrained(args.model, dtype=torch.bfloat16).to(args.device)
         cfg = LoraConfig(r=args.lora_r, lora_alpha=2 * args.lora_r, lora_dropout=0.0,
                          target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
                                          "gate_proj", "up_proj", "down_proj"])
+        base.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+        base.config.use_cache = False
         self.model = get_peft_model(base, cfg)
         self.opt = torch.optim.AdamW([p for p in self.model.parameters() if p.requires_grad],
                                      lr=args.lr, weight_decay=0.0)
@@ -80,10 +82,10 @@ class LLM:
     def sample(self, users, G, seed):
         torch = self.torch
         torch.manual_seed(seed)
-        enc = self.tok([self.chat(u) for u in users], return_tensors="pt", padding=True).to("cuda")
+        enc = self.tok([self.chat(u) for u in users], return_tensors="pt", padding=True).to(self.args.device)
         self.model.eval()
         with torch.no_grad():
-            out = self.model.generate(**enc, do_sample=True, temperature=self.args.temperature, top_p=1.0,
+            out = self.model.generate(**enc, use_cache=True, do_sample=True, temperature=self.args.temperature, top_p=1.0,
                                       top_k=0, max_new_tokens=self.args.max_new_tokens,
                                       num_return_sequences=G, pad_token_id=self.tok.pad_token_id)
         P = enc["input_ids"].shape[1]
@@ -93,7 +95,10 @@ class LLM:
     def _logp(self, seqs, P, attn):
         torch = self.torch
         pos = (attn.long().cumsum(1) - 1).clamp(min=0)
-        logits = self.model(input_ids=seqs, attention_mask=attn, position_ids=pos).logits[:, P - 1:-1]
+        L = seqs.shape[1]
+        # logits only for the positions that predict answer tokens
+        logits = self.model(input_ids=seqs, attention_mask=attn, position_ids=pos,
+                            logits_to_keep=L - P + 1).logits[:, :-1]
         return torch.log_softmax(logits.float(), -1).gather(-1, seqs[:, P:, None]).squeeze(-1)
 
     def update(self, out, P, adv):
@@ -107,7 +112,7 @@ class LLM:
         first_pad = (comp == pad).float().cumsum(1) == 1
         cmask = torch.where((comp == eos) & first_pad, torch.ones_like(cmask), cmask)
         attn[:, P:] = cmask.long()
-        adv = torch.tensor(adv, dtype=torch.float32, device="cuda")
+        adv = torch.tensor(adv, dtype=torch.float32, device=self.args.device)
         self.model.train()
         self.opt.zero_grad(set_to_none=True)
         n_tok = cmask.sum().clamp(min=1)
@@ -124,7 +129,7 @@ class LLM:
                 d = ref - lp
                 kl = torch.exp(d) - d - 1  # k3 estimator
                 loss_tok = loss_tok + self.args.kl * kl
-                stats["kl"] += float((kl * cmask[sl]).sum() / n_tok)
+                stats["kl"] += float((kl.detach() * cmask[sl]).sum() / n_tok)
             ((loss_tok * cmask[sl]).sum() / n_tok).backward()
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
         self.opt.step()
@@ -185,7 +190,8 @@ def main():
     ap.add_argument("--lora-r", type=int, default=16)
     ap.add_argument("--temperature", type=float, default=1.0)
     ap.add_argument("--max-new-tokens", type=int, default=16)
-    ap.add_argument("--micro-batch", type=int, default=96)
+    ap.add_argument("--micro-batch", type=int, default=48)
+    ap.add_argument("--device", default="cuda")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
