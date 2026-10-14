@@ -155,8 +155,59 @@ def oracle_fig(root="results/p3_oracle"):
     write_rows(rows, "p3_oracle_per_problem")
 
 
+
+def table(root="results/p3", oracle_root=None):
+    """Per arm x problem: fitness while assisted, % vs no AI paired by seed (oracle runs from
+    `oracle_root` fill in seeds missing in `root`), plus the LLM collapse measures."""
+    runs = load(root)
+    if oracle_root:
+        orc = load(oracle_root)
+        for a in ("none", "sbp", "pcc", "gated"):
+            have = {r["dir"].rsplit("_s", 1)[1] for r in runs.get(a, [])}
+            runs[a] = runs.get(a, []) + [r for r in orc.get(a, []) if r["dir"].rsplit("_s", 1)[1] not in have]
+    seed = lambda r: int(r["dir"].rsplit("_s", 1)[1])
+    none = {seed(r): r for r in runs["none"]}
+    out = []
+    for a in [a for a in ARM_COLORS if a in runs and a != "none"]:
+        for k in range(runs[a][0]["cfg"]["problems"]):
+            d, base, coll = [], [], collections.defaultdict(list)
+            for r in runs[a]:
+                rk = [x for x in r["rounds"] if x["problem"] == k]
+                if seed(r) not in none or len(rk) < r["cfg"]["rounds"]:
+                    continue
+                nk = [x for x in none[seed(r)]["rounds"] if x["problem"] == k]
+                d.append(np.mean([x["fitness"] for x in rk]) - np.mean([x["fitness"] for x in nk]))
+                base.append(np.mean([x["fitness"] for x in nk]))
+                late = [x for x in rk if x["round"] >= r["cfg"]["rounds"] // 2]
+                early = [x for x in rk if x["round"] < 15]
+                for key, rows_ in (("top_share", late), ("group_distinct", late), ("step_back", late),
+                                   ("improve_shown", early)):
+                    v = [x[key] for x in rows_ if x.get(key) is not None]
+                    if v:
+                        coll[key].append(np.mean(v))
+                g = sum(x.get("gain_shown") or 0 for x in early)
+                o = sum(x.get("sbp_gain") or 0 for x in early)
+                if o > 0 and any(x.get("gain_shown") is not None for x in early):
+                    coll["gain_vs_oracle_nudge"].append(g / o)
+            if not d:
+                continue
+            d, m0 = np.array(d), np.mean(base)
+            se = d.std(ddof=1) / np.sqrt(len(d)) if len(d) > 1 else np.nan
+            row = dict(arm=a, problem=k + 1, n=len(d), during=100 * d.mean() / m0,
+                       during_lo=100 * (d.mean() - 1.96 * se) / m0, during_hi=100 * (d.mean() + 1.96 * se) / m0)
+            for key in ("top_share", "group_distinct", "step_back", "improve_shown", "gain_vs_oracle_nudge"):
+                row[key] = float(np.mean(coll[key])) if coll[key] else None
+            out.append(row)
+    tag = os.path.basename(os.path.normpath(root))
+    write_rows(out, f"{tag}_table")
+    for r in out:
+        print(" ".join(f"{k}={v:.3g}" if isinstance(v, float) else f"{k}={v}" for k, v in r.items()))
+    return out
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "oracle":
         oracle_fig(*sys.argv[2:])
+    elif len(sys.argv) > 1 and sys.argv[1] == "table":
+        table(*sys.argv[2:])
     else:
         main(*sys.argv[1:])
