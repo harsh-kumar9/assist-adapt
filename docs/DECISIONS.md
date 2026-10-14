@@ -377,3 +377,9 @@ homogenises them only a little, because its answers rarely improve anyone and so
 adopted. Homogenisation needs answers that get adopted. The untrained model is slightly harmful:
 its answers cost people rounds. This is why (b) matters: with the community's best approaches in
 the prompt, answers can help and get adopted. (b) launched 2026-10-14 19:2x UTC, 60 runs.
+
+(b) first run check (2026-10-14 19:38 UTC, p3b/now_s0, problem 1): runs on GPU with context, and the
+per-problem adapter is saved. With the community's best approaches in the prompt the model's answers
+improve 56-68% of askers in rounds 1-3 (without context ~30%); by round 3, 92% of askers get the same
+answer and by round 5, 100%; distinct community modules 90 -> 22 (round 3) -> 6 (round 5) -> 1. It
+learns "copy the best for everyone" within a few rounds: NP behaviour, adopted. 59 runs queued.
