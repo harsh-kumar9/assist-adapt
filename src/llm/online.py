@@ -39,9 +39,33 @@ USER = ("A team's approach is 20 yes/no choices, written as digits (1 = yes).\n"
 STEP_BACK = "\nIf no change would help, repeat the current values and the team will explore on its own."
 
 
-def render(code, N=20, M=10, step_back=False):
+CONTEXT_HEAD = "Approaches the best-scoring teams use right now (choices 1-10 | choices 11-20, score):\n"
+
+
+def digits(code, lo, hi):
+    return "".join(str((int(code) >> j) & 1) for j in range(lo, hi))
+
+
+def top_context(codes, fit, k, N=20, M=10):
+    """The k best distinct configurations in the community, with their fitness (G-3 b)."""
+    out, seen = [], set()
+    for i in np.argsort(-fit, kind="stable"):
+        if int(codes[i]) in seen:
+            continue
+        seen.add(int(codes[i]))
+        out.append((int(codes[i]), float(fit[i])))
+        if len(out) == k:
+            break
+    return out
+
+
+def render(code, N=20, M=10, step_back=False, context=None):
     bits = [(int(code) >> j) & 1 for j in range(N)]
     text = USER.format(mc="".join(map(str, bits[:M])), rest="".join(map(str, bits[M:])))
+    if context:
+        lines = "".join(f"{i + 1}. {digits(c, 0, M)} | {digits(c, M, N)}, score {f:.2f}\n"
+                        for i, (c, f) in enumerate(context))
+        text = CONTEXT_HEAD + lines + "\n" + text
     return text + STEP_BACK if step_back else text
 
 
@@ -181,6 +205,8 @@ def main():
     ap.add_argument("--reward", default="now", choices=["now", "edit"])
     ap.add_argument("--edit-cost", type=float, default=0.8)
     ap.add_argument("--kl", type=float, default=0.0)
+    ap.add_argument("--context", type=int, default=0,
+                    help="show the k best distinct configurations in the community (G-3 b)")
     ap.add_argument("--step-back", action="store_true",
                     help="unchanged answer = asker explores on their own; scored by that exploration (D-013)")
     ap.add_argument("--model", default="Qwen/Qwen3-4B-Instruct-2507")
@@ -256,7 +282,8 @@ def main():
                 shown = prop[idx] & mc
                 rec.update(shown_edit=float(np.mean([popcount((s ^ c) & mc) for s, c in zip(shown, codes[idx])])))
             elif len(idx) and llm:
-                out, P, texts = llm.sample([render(codes[i], step_back=args.step_back) for i in idx], args.G,
+                ctx = top_context(codes, fit, args.context) if args.context else None
+                out, P, texts = llm.sample([render(codes[i], step_back=args.step_back, context=ctx) for i in idx], args.G,
                                            seed=args.seed * 100003 + k * 1000 + t)
                 explore_gain = np.maximum(0, F[prop[idx]] - fit[idx]) * 10  # what the asker gets on their own
                 R, gains, edits, mods = [], [], [], []
@@ -315,6 +342,7 @@ def main():
                                          mean=float(np.mean(vals)), final=vals[-1])) + "\n")
         if llm:
             llm.save(os.path.join(args.out, "adapter"))
+            llm.model.save_pretrained(os.path.join(args.out, f"adapter_p{k}"))  # kept per problem (G-3)
         json.dump(dict(next_problem=k + 1, codes=codes.tolist(), rng=rng.bit_generator.state),
                   open(state_path + ".tmp", "w"))
         os.replace(state_path + ".tmp", state_path)
