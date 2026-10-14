@@ -15,11 +15,13 @@ import numpy as np
 from src.analyze import AQUA, BLUE, GRID, INK, INK2, MUTED, ORANGE, RED, mark_panels, plt, save, write_rows
 
 ARM_COLORS = {"none": MUTED, "sbp": ORANGE, "pcc": "#eda100", "gated": INK2, "now": BLUE, "kl": AQUA,
-              "stepback": "#e87ba4", "edit": "#4a3aa7", "cf": RED, "thumbs": "#4a3aa7", "pairwise": RED}
+              "stepback": "#e87ba4", "edit": "#4a3aa7", "cf": RED, "thumbs": "#4a3aa7", "pairwise": RED,
+              "thumbskl": "#8d82d9", "pairwisekl": "#f09a99"}
 ARM_NAMES = {"none": "No AI", "sbp": "SBP (oracle nudge)", "pcc": "PCC (oracle full answer)",
              "gated": "Gated oracle (P2 rule)", "now": "LLM, R_now", "kl": "LLM, R_now + KL",
              "stepback": "LLM, R_now + step back", "edit": "LLM, nudge prior", "cf": "LLM, R_adapt",
-             "thumbs": "LLM, thumbs up/down", "pairwise": "LLM, pick one of two"}
+             "thumbs": "LLM, thumbs up/down", "pairwise": "LLM, pick one of two",
+             "thumbskl": "LLM, thumbs + KL", "pairwisekl": "LLM, pick one of two + KL"}
 
 
 def load(root):

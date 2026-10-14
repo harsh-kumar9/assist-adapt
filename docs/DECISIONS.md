@@ -350,3 +350,9 @@ rating sees what the community can do later. Hypothesis: thumbs (satisficing) co
 than pairwise (always pushes to the single best answer). Runs: 3 arms x 6 seeds x rho {1, 0.8},
 no KL first; then KL on whichever feedback collapses most; then the (a) evaluator on the
 per-problem adapters.
+
+D-014 addendum (2026-10-14). Harsh asked whether to add KL arms for thumbs and pairwise. Recommended
+yes and added: KL-anchored training is the realistic RLHF condition (no-KL is the ablation), and KL
+was the only lever that kept the model varied in (a). thumbskl and pairwisekl, beta 0.05, same 6 seeds
+x rho {1, 0.8}: 24 more runs, ~1 GPU-hour each. Not added for the scalar arm, which (a) already
+covers with KL (without context). Total (b): 5 arms x 6 seeds x 2 rho = 60 runs.
