@@ -202,21 +202,28 @@ shift, PCC goes from +43.6% while assisted to -1.3% after and SBP is the only as
 ahead of no AI (+1.8%). Bonferroni ranking flips: 6 (main), 8, 14, 16. Shift penalty vs
 diversity lost: r = 0.63, 0.52, 0.48, 0.49. The open network density does not change the result.
 
-## P3 oracle baseline (2026-10-14)
+## P3 oracle baseline (2026-10-14, corrected)
 
 Oracle assistants through the P3 driver, 300 seeds, rho = 1, use 0.5, four problems of 60
 rounds, each redrawing 20% of the last one's tables. Every community converges within the first
-problem (PCC by round 10). Fitness while assisted, % vs no AI, problems 1-4: PCC +27.8, +4.0,
--3.6, +2.7; SBP +13.2, +5.6, +3.4, +4.1. PCC works by copying a peer's module, so once it has
-made everyone hold the same module it has nothing left to offer, and after the first problem it
-is no better than no AI. SBP proposes flips nobody holds and keeps helping. The next-problem
-AI-off probe differs by a few percent with CIs of about +-5%, so the continual effect shows up
-in fitness while assisted, not in the probe.
+problem (PCC by round 10). Fitness while assisted, % vs no AI with 95% CI:
 
-For the LLM this sets the question sharply: an assistant whose knowledge comes from the
-community behaves like PCC and runs dry; one that keeps generating new options behaves like SBP.
-Whether an LLM trained with R_now keeps generating or collapses is what the R_now and KL arms
-measure.
+| problem | PCC | SBP |
+|---|---|---|
+| 1 | +27.8 [+24.9, +30.7] | +13.2 [+10.9, +15.5] |
+| 2 | +4.0 [-1.0, +8.9] | +5.6 [+1.2, +9.9] |
+| 3 | -3.6 [-8.4, +1.3] | +3.4 [-1.2, +7.9] |
+| 4 | +2.7 [-2.7, +8.1] | +4.1 [-1.1, +9.3] |
+
+Paired SBP - PCC: -14.6 points in problem 1 (p < 1e-18), then +1.6 (p = .52), +6.9 (p = .01),
++1.4 (p = .62). Once the community has converged, both assistants lose most of what they offered;
+PCC loses all of its large early lead, because copying a peer's module offers nothing when every
+peer holds the same module. My first reading ("SBP keeps helping") was too strong. The
+next-problem AI-off probe has CIs of about +-5% and shows no clear differences.
+
+For the LLM this frames the question: once the community is uniform, the only help left is help
+that brings in something new. Whether an LLM trained online keeps generating new options or
+collapses onto one answer is what the R_now, KL and step-back arms measure.
 
 ## D-013 P2 outcome and what it changes for P3 (2026-10-14)
 

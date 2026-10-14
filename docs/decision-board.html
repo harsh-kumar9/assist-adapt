@@ -109,18 +109,18 @@ a { color: var(--accent); }
 
 <main class="wrap">
   <header class="stack col">
-    <div class="eyebrow">assist-adapt · decision board · 13 Oct 2026</div>
+    <div class="eyebrow">assist-adapt · decision board · updated 14 Oct 2026</div>
     <h1>Help now, adapt later</h1>
-    <p class="lede">Can an AI assistant make a community better at today's problem while leaving it worse at the next one? We test it in the NK model of Fazelpour, O'Brien &amp; Rubin (2026). After some rounds with an assistant, the problem changes and the assistant goes away. We measure how the community does next.</p>
+    <p class="lede">Can an AI assistant make a community better at today's problem while leaving it worse at the next one, and what keeps an LLM assistant that keeps learning from the community it advises from making everyone the same? We test both in the NK model of Fazelpour, O'Brien &amp; Rubin (2026).</p>
   </header>
 
   <section class="stack" aria-label="Pipeline status">
     <div class="pipeline">
-      <div class="stage"><span class="chip done">Done</span><b>P0 Replicate</b><span>Paper's model and three AI designs, 1000 seeds</span></div>
-      <div class="stage"><span class="chip done">Done</span><b>P1 Probes</b><span>Shift and withdrawal after 10 to 100 assisted rounds</span></div>
-      <div class="stage"><span class="chip done">Done</span><b>P1b Copy rules</b><span>Simple fixes where P1 found the effect</span></div>
-      <div class="stage"><span class="chip you">Your call</span><b>P2 Learned selector</b><span>Same assistant, three rewards</span></div>
-      <div class="stage"><span class="chip later">Later</span><b>P3 LLM or people</b><span>GRPO on mira/vega, or a browser study</span></div>
+      <div class="stage"><span class="chip done">Done</span><b>P0–P1b</b><span>Replication, shift and withdrawal probes, copy rules</span></div>
+      <div class="stage"><span class="chip done">Done</span><b>Robustness</b><span>Denser network, 50% shift, K = 5</span></div>
+      <div class="stage"><span class="chip done">Done</span><b>P2 Learned help</b><span>Full answer, nudge or step back; 3 rewards × 2 seeds</span></div>
+      <div class="stage"><span class="chip done">Done</span><b>P3 oracle</b><span>Four problems in a row, 300 seeds</span></div>
+      <div class="stage"><span class="chip wait">Queued</span><b>P3 LLM</b><span>Qwen3-4B learning online, 3 arms × 2 seeds on mira/vega</span></div>
     </div>
   </section>
 
@@ -131,139 +131,104 @@ a { color: var(--accent); }
         <div class="rq">RQ1 · Replication</div>
         <div class="body">
           <p class="verdict">Our build reproduces the paper.</p>
-          <p class="detail">NP cuts diversity by 23.8% on average (paper: 25%), helps only at high modularity and low use, and gets worse as use rises. TDR beats SBP at every use rate when ρ = 1. SBP helps everywhere, least at ρ = 1. One difference: NP's gains start at ρ ≈ 0.9, not 0.8.</p>
+          <p class="detail">NP cuts diversity by 23.8% (paper: 25%), helps only at high modularity and low use; TDR beats SBP at every use rate when ρ = 1; SBP helps everywhere. NP's gains start at ρ ≈ 0.9 rather than 0.8.</p>
         </div>
       </div>
       <div class="answer">
         <div class="rq">RQ2 · Help now vs later</div>
         <div class="body">
           <p class="verdict">How an assistant looks while in use is a poor guide to what it leaves behind.</p>
-          <p class="detail">At ρ = 1, use 0.5, after 30 rounds: NP is +23% while assisted and −2% after a shift with the AI gone. SBP is +18% and +4%. The ranking flips in 14 settings at Bonferroni p &lt; 4.4×10⁻⁵, all of them NP ahead of an SBP-type assistant during use and behind it after the shift.</p>
+          <p class="detail">At ρ = 1, use 0.5, after 30 rounds: PCC (a tailored full answer) is +43.6% while assisted and +5.3% after a shift with the AI gone; SBP (a one-step nudge) is +18.4% and +4.2%; NP is +23% and −2%. Rankings flip in 6–16 settings per condition at Bonferroni p &lt; 6×10⁻⁵.</p>
         </div>
       </div>
       <div class="answer">
-        <div class="rq">RQ3 · Mechanism</div>
+        <div class="rq">RQ3 · Mechanism and robustness</div>
         <div class="body">
-          <p class="verdict">The cost of a shift tracks how much diversity the assistant removed.</p>
-          <p class="detail">Across 162 settings, the shift penalty correlates with diversity lost by the time of the shift (r = 0.46). NP and TDR halve diversity in about 10 rounds at ρ = 1. SBP barely moves it. Agents never get worse at searching in this model. The gap comes only from where the assistant left them.</p>
+          <p class="verdict">Whole copied solutions homogenise and pay at the shift; nudges do not. This holds with a denser network, a 50% shift and K = 5.</p>
+          <p class="detail">Shift penalty vs diversity lost: r = 0.63, 0.52, 0.48, 0.49 across the four conditions. With a 50% shift, PCC drops from +43.6% to −1.3% and SBP is the only assistant still ahead of no AI.</p>
         </div>
       </div>
       <div class="answer">
-        <div class="rq">RQ4 · Simple fixes</div>
+        <div class="rq">RQ4 · Does a longer reward fix it?</div>
         <div class="body">
-          <p class="verdict" id="rq4-verdict">Sampling tweaks barely help. The trade-off is a whole copied solution versus a one-step nudge.</p>
-          <p class="detail" id="rq4-detail">Choosing among SBP's flips changes nothing, since SBP hardly reduces diversity. Widening TDR's pool or favouring rarer modules adds 1 to 2 points after the shift. PCC, the paper's personalised copy, is best on both axes, but at ρ = 1 it keeps +5% of a +44% gain while SBP keeps +4% of +18%. Every assistant that copies a whole module halves diversity at ρ = 1 (shift penalty vs diversity lost, r = 0.63).</p>
+          <p class="verdict">No. Being able to step back does.</p>
+          <p class="detail">A policy choosing full answer, nudge or step back learns the same thing under R_now, R_long and R_adapt (two ES seeds each): help hard for ~5 rounds, then step back ~85% of the time. At ρ = 1: +86% while assisted, +26 to +28% after the shift, versus +68% / +24% for the best rule that always answers. A one-line rule (help only if it improves the asker, with whichever kind gains more, else step back) gets +85% / +25%.</p>
+        </div>
+      </div>
+      <div class="answer">
+        <div class="rq">RQ5 · Over continual problems</div>
+        <div class="body">
+          <p class="verdict">Once the community is uniform, assistants have little left to give. The gated rule holds up best.</p>
+          <p class="detail">Four problems in a row, fitness while assisted vs no AI. PCC: +27.8%, then +4.0%, −3.6%, +2.7% (the last three not significant). SBP: +13.2%, +5.6%, +3.4%, +4.1%. Gated: +58.7%, +17.4%, +6.1%, +6.0%, the only one clearly ahead in every problem. Copying from peers offers nothing once every peer holds the same solution.</p>
         </div>
       </div>
     </div>
   </section>
 
+  <section class="col stack">
+    <h2>How an LLM could break the curse</h2>
+    <p>An assistant that keeps learning from the community it advises gets hit twice. Its answers make people alike (P1b). Then it learns from people it has already made alike, so its own answers narrow, and after a shift it has nothing varied left to learn from. The oracle runs show the first half: help that recombines what people already have runs dry. These are the levers, with what the simulations say so far:</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Lever</th><th>What the sims say</th><th>In P3</th></tr></thead>
+        <tbody>
+          <tr><td>Reward that sees the community later (R_adapt)</td><td>No effect once stepping back is allowed (P2)</td><td>On hold</td></tr>
+          <tr><td>Being able to step back</td><td>The biggest effect: +20 points while assisted, same or better after (P2), and the best assistant over continual problems</td><td>Arm: R_now + step back</td></tr>
+          <tr><td>Kind of help: nudge vs full answer</td><td>Full answers homogenise; mixing both beats either alone (P1b, P2)</td><td>Measured: how much of the asker's module each answer rewrites</td></tr>
+          <tr><td>Keep the model's own answers varied (KL to base)</td><td>Not testable with oracles</td><td>Arm: R_now + KL</td></tr>
+          <tr><td>Replay of earlier askers; several assistants instead of one</td><td>Not yet tested</td><td>Later</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>P3 measures the curse directly. Across askers: does the model give everyone the same answer? Within a group of 8 samples: does it stop varying, which leaves GRPO no signal? In the community: does diversity collapse? After each shift: how fast do model and community recover?</p>
+  </section>
+
   <section class="col">
     <h2>Calls for you</h2>
-    <p style="color:var(--ink-2);margin-bottom:14px">Reply in chat with the ID and yes, no, or a change. Everything here is logged as proposed in <code>docs/DECISIONS.md</code>.</p>
+    <p style="color:var(--ink-2);margin-bottom:14px">Reply in chat with the ID and yes, no, or a change. Details are in <code>docs/DECISIONS.md</code>.</p>
     <div class="calls">
-
       <article class="call key">
-        <header><span class="id">G-1</span><h3>Go to P2, aimed at the copy-versus-nudge trade-off?</h3></header>
-        <p class="rec"><b>Recommend yes.</b> P1 and P1b both pass gate (1), and the simple rules leave a gap. The P2 written before the results (D-008) targets SBP's flips, where there is nothing to find, so it gets replaced by D-011.</p>
-        <ul>
-          <li>Alternative: stop here and write P0 to P1b up as a short paper on evaluation (how an assistant looks during use versus what it leaves behind).</li>
-          <li>Alternative: run the robustness sweep below first and start P2 after.</li>
-        </ul>
-        <p class="cost">Cost: about a day to build P2. CPU only on ada; one training run should take minutes to an hour.</p>
+        <header><span class="id">D-013</span><h3>P3's third arm: step back instead of the nudge prior</h3></header>
+        <p class="rec"><b>Recommend yes (already queued).</b> P2 showed the nudge prior's premise was wrong (R_adapt does not prefer nudges) and that stepping back is what matters. In the LLM arm, returning the asker's choices unchanged means the asker explores on their own, and that answer is scored by the exploration's gain. The prompt tells the model it can do this. The counterfactual R_adapt arm stays on hold.</p>
+        <p class="cost">Note: this arm's prompt has one extra sentence, so prompt and option are tested together.</p>
       </article>
       <article class="call">
-        <header><span class="id">D-011</span><h3>P2 design: full answer, nudge, or step back</h3></header>
-        <p class="rec"><b>Recommend.</b> On each query the assistant picks PCC (a full answer), SBP (a nudge) or nothing (the agent explores). Linear softmax policy over six features, about 15 parameters, fit with an evolution strategy. Rewards: R_now (fitness while assisted), R_long (plus 30 more rounds with the AI), R_adapt (plus fitness after a shift with the AI off). Train on seeds 0–799, test on 800–999, a 50% shift and an unseen use rate.</p>
-        <ul>
-          <li>Simple rules the learner has to beat: always PCC, always SBP, PCC with probability 0.25 / 0.5 / 0.75, and PCC for the first k rounds then SBP.</li>
-          <li>Alternative: a neural policy with PPO. Heavier and harder to read. Only if the linear one is clearly too weak.</li>
-          <li>The action set maps onto LLM help (write it for me, suggest an edit, let me try), which is what a P3 GRPO run would train.</li>
-        </ul>
+        <header><span class="id">G-2</span><h3>What to run after the first LLM results</h3></header>
+        <p class="rec"><b>Recommend deciding at the gate.</b> If the arms separate on two seeds, run 4 more seeds each, plus ρ = 0.8 where the right answer depends on the asker (about 12 GPU-hours). If R_now does not collapse at all, the curse does not appear for a learned assistant here, which is itself a finding, and we go straight to the ρ = 0.8 setting.</p>
       </article>
       <article class="call">
-        <header><span class="id">D-003</span><h3>Parameters the paper leaves open</h3></header>
-        <p class="rec"><b>Recommend accepting, plus one robustness sweep.</b> Network density p_edge = 0.05, fitness scale (f/max)^8, synchronous updates. Our NP gains start at ρ ≈ 0.9 rather than 0.8, which network density could explain. Rerun P1b with p_edge = 0.1, a 50% shift, and K = 5 alongside P2.</p>
-        <ul>
-          <li>Alternative: email Fazelpour for their code and settings before going further.</li>
-        </ul>
-        <p class="cost">Cost: three P1b-sized sweeps, about 15 minutes on ada.</p>
-      </article>
-      <article class="call">
-        <header><span class="id">D-004 · D-006</span><h3>The probe and its outcome measure</h3></header>
-        <p class="rec"><b>Recommend accepting as run.</b> The shift redraws the payoff tables of 4 of 20 decisions, picked at random and independent of the run. We watch 30 rounds after the probe. The primary cell is shifted problem with the AI off, scored as absolute fitness, so an assistant cannot look good by leaving people with worse starting points.</p>
-      </article>
-      <article class="call">
-        <header><span class="id">D-010</span><h3>The P1b rules (already run)</h3></header>
-        <p class="rec"><b>Ratify after the fact.</b> I ran TDR-25%, TDR-inverse and PCC because P1 put the effect in the copy-based assistants. They took 5 minutes on ada and settled the gate, so I did not wait for a ruling.</p>
-      </article>
-      <article class="call">
-        <header><span class="id">D-009</span><h3>P3: LLM or people</h3></header>
-        <p class="rec"><b>Decide after P2. My lean is people.</b> A browser version of the task (10 unaided trials, 30 assisted, 20 unaided on a shifted problem), communities as the unit, following your 2024 creativity design. The GPU option is GRPO on Qwen3.5-9B on mira/vega, choosing the help mode with R_now versus R_adapt.</p>
-      </article>
-      <article class="call">
-        <header><span class="id">Repo</span><h3>GitHub</h3></header>
-        <p class="rec">The repo is local git only. If you create <code>github.com/harsh-kumar9/assist-adapt</code> (or tell me another name), I will push it.</p>
+        <header><span class="id">Framing</span><h3>The story has moved</h3></header>
+        <p class="rec"><b>Recommend holding until P3.</b> We started from "design the reward." The sims say the reward horizon does not matter and the action set does: whether the assistant can step back, and whether it rewrites or nudges. That points to a paper about abstention and the kind of help, with the LLM runs as the test of whether a learned assistant finds this on its own.</p>
       </article>
     </div>
   </section>
 
   <section class="stack">
     <h2 class="col">Results</h2>
-
     <figure>
-      <div class="plate"><img src="figures/p0_replication.png" alt="Heatmaps of percent change versus no AI for NP, TDR and SBP across modularity and use rate: final fitness, early fitness and diversity AUC."></div>
-      <figcaption><b>P0. Replication.</b> Percent difference from the no-AI community on the same seed, 1000 seeds per cell. Rows: fitness at round 100, mean fitness in rounds 1–10, and area under mean pairwise Hamming distance. Grey cells: paired t-test p ≥ .05. K = 9, H = 10, p_social = 0.1.</figcaption>
+      <div class="plate"><img src="figures/p1_during_vs_after.png" alt="Scatter of fitness while assisted against fitness after a shift with the AI removed, one panel per modularity."></div>
+      <figcaption><b>Help now vs later.</b> One point per assistant, use 0.5, 30 assisted rounds. x: mean fitness over rounds 1–30. y: mean fitness over the 30 rounds after 20% of payoff tables are redrawn and the AI is removed. % vs no AI, 95% CIs from paired differences, 1000 seeds. Grey: SBP variants.</figcaption>
     </figure>
     <figure>
-      <div class="plate"><img src="figures/p1_during_vs_after.png" alt="Scatter of fitness while assisted against fitness after a shift with the AI removed, one panel per modularity, for NP, TDR, SBP and SBP variants."></div>
-      <figcaption><b>P1. While assisted versus after.</b> One point per assistant at use rate 0.5 after 30 assisted rounds. x: mean fitness over rounds 1–30. y: mean fitness over the 30 rounds after 20% of payoff tables are redrawn and the AI is removed. Both are % versus no AI, with 95% CIs from paired differences, 1000 seeds. Grey: SBP with random or diversity-seeking choice among the 3 or all improving flips. At ρ = 1, NP ranks second on x and last on y.</figcaption>
+      <div class="plate"><img src="figures/robustness.png" alt="Four panels: the same scatter under the main setting, a denser network, a bigger shift and a smoother landscape."></div>
+      <figcaption><b>Robustness.</b> ρ = 1, use 0.5, T = 30, 1000 seeds per panel. Full-answer designs (NP, TDR variants, PCC) lose far more to the shift than SBP in every condition.</figcaption>
     </figure>
     <figure>
-      <div class="plate"><img src="figures/p1b_during_vs_after.png" alt="Same scatter for the copy-based rules: NP, TDR, TDR-25%, TDR-inverse, PCC and SBP at modularity 0.8, 0.9 and 1."></div>
-      <figcaption><b>P1b. Copy-based rules.</b> Same axes as P1, at ρ = 0.8, 0.9 and 1. TDR-25% widens the copy pool to the top 25%. TDR-inverse draws top-10% agents with probability proportional to 1 / (agents already using that module). PCC tries every peer's module in the asker's context.</figcaption>
+      <div class="plate"><img src="figures/p2_frontier.png" alt="Learned policies against fixed mixes and gated mixes of full answers and nudges, one panel per modularity."></div>
+      <figcaption><b>P2.</b> Test seeds 800–999. Grey circles: always answer, from all nudges to all full answers. Squares: full answers first, then nudges. Dark diamonds: gated mixes (help only if it improves the asker, else step back); star: gated with whichever gains more. Coloured: learned policies under three rewards (ES seed 0; seed 1 within 2 points).</figcaption>
     </figure>
     <figure>
-      <div class="plate"><img src="figures/p1b_mechanism.png" alt="Four panels: diversity over rounds, the four probe cells after 30 rounds, after-shift fitness by exposure length, and shift penalty against diversity lost."></div>
-      <figcaption><b>Mechanism.</b> (a) Mean pairwise Hamming distance over rounds at ρ = 1, use 0.5. (b) Fitness over the 30 rounds after the probe at T = 30 in all four cells (same or shifted problem, AI on or off). (c) Fitness after a shift with the AI off by number of assisted rounds. (d) Each point is one assistant × ρ × use × T &lt; 100 setting: the shift penalty (shifted minus same problem, AI off, in points) against diversity at the shift relative to no AI. Line: least squares, r = 0.63.</figcaption>
+      <div class="plate"><img src="figures/p2_actions.png" alt="Share of full answers, nudges and step-backs by round for the three learned policies."></div>
+      <figcaption><b>What the learned policies do.</b> ρ = 1, use 0.5. All three rewards give the same schedule: nudges first, then full answers, then mostly step back once help stops improving people.</figcaption>
     </figure>
-  </section>
-
-  <section class="col">
-    <h2>What we kept and what we dropped</h2>
-    <p style="color:var(--ink-2);margin-bottom:14px">Each dropped piece adds an assumption the result would then restate. They can come back one at a time once the first result holds.</p>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Kept</th><th>Dropped for now</th></tr></thead>
-        <tbody>
-          <tr><td>The paper's model unchanged: N = 20, M = 10, K = 9, H = 10, 100 agents, p_social = 0.1</td><td>Skill decay, forgetting, preference change</td></tr>
-          <tr><td>One probe: shift the problem, remove the AI, watch 30 rounds</td><td>Assistant retraining on community outputs, shared archives, cultural transmission</td></tr>
-          <tr><td>One lever: how the assistant picks among good suggestions</td><td>LLM-simulated people (they homogenise on their own)</td></tr>
-          <tr><td>Rewards the simulator computes exactly</td><td>Learned reward models, LLM judges, option-value and empowerment formulas</td></tr>
-          <tr><td>One parameter setting from the paper</td><td>Big factorial over network type, H, K, p_social</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="col">
-    <h2>Pilots and gates</h2>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Pilot</th><th>What runs</th><th>Gate</th></tr></thead>
-        <tbody>
-          <tr><td>P0</td><td>Paper's designs over ρ 0.6–1 and use 0.125–0.875</td><td>Paper's findings come back. <b>Passed.</b></td></tr>
-          <tr><td>P1</td><td>Shift and withdrawal probes at T = 10, 30, 60, 100; SBP selection rules</td><td>An assistant helps during use but not after, CIs excluding zero. <b>Passed.</b> SBP rules: nothing to fix.</td></tr>
-          <tr><td>P1b</td><td>Copy-based rules at ρ 0.8–1</td><td>A simple rule closes NP's gap. <b>Not closed.</b> Sampling tweaks add 1–2 points; the copy-versus-nudge split remains.</td></tr>
-          <tr><td>P2</td><td>Learned copy-source selector, rewards R_now, R_long, R_adapt, held-out landscapes</td><td>R_adapt beats R_long and the best simple rule at matched help during use</td></tr>
-          <tr><td>P3</td><td>LLM assistant with GRPO on mira/vega, or a browser study with people</td><td>Pick after P2</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <figure>
+      <div class="plate"><img src="figures/p3_oracle_continual.png" alt="Four panels: fitness and diversity over four successive problems, and per-problem percent differences while assisted and on the next problem without AI."></div>
+      <figcaption><b>Continual problems, oracle assistants.</b> 300 seeds, ρ = 1, use 0.5, a new problem every 60 rounds (20% of tables redrawn). (c) Mean fitness while assisted in each problem. (d) Mean fitness over 30 rounds on the next problem without the assistant. % vs no AI, 95% CIs.</figcaption>
+    </figure>
   </section>
 
   <footer class="col">
-    <div>Repo <code>~/Desktop/assist-adapt</code> (local git) · mirror <code>/ada1/u/harsh/assist-adapt</code> · CPU sweeps on ada with <code>scripts/ada_sweep.sh</code>: P0 6 min, P1 8 min, P1b 5 min.</div>
-    <div>Every number traces to <code>results/summary/*.csv</code>. Comparisons are paired by seed against the no-AI community on the same landscape, network and starting points; 95% CIs from paired differences.</div>
+    <div>Repo <a href="https://github.com/harsh-kumar9/assist-adapt">github.com/harsh-kumar9/assist-adapt</a> · mirror <code>/ada1/u/harsh/assist-adapt</code> · CPU sweeps on ada (<code>scripts/ada_sweep.sh</code>), LLM runs on mira/vega (<code>scripts/p3_submit.sh</code>, code frozen at submit).</div>
+    <div>Every number traces to <code>results/summary/*.csv</code>. Comparisons are paired by seed against the no-AI community on the same landscape, network and starting points.</div>
   </footer>
 </main>

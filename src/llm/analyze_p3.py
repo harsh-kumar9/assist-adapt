@@ -92,5 +92,71 @@ def main(root="results/p3"):
         write_rows(rows, "p3_probes")
 
 
+
+
+def per_problem(runs, arm, base="none"):
+    """Per problem: mean fitness while assisted and next-problem AI-off fitness, % vs no AI,
+    paired by seed, with 95% CIs."""
+    seeds = sorted({int(r["dir"].rsplit("_s", 1)[1]) for r in runs[arm]} &
+                   {int(r["dir"].rsplit("_s", 1)[1]) for r in runs[base]})
+    by = {a: {int(r["dir"].rsplit("_s", 1)[1]): r for r in runs[a]} for a in (arm, base)}
+    out = []
+    n_prob = runs[arm][0]["cfg"]["problems"]
+    for k in range(n_prob):
+        vals = {}
+        for a in (arm, base):
+            vals[a] = (np.array([np.mean([x["fitness"] for x in by[a][s]["rounds"] if x["problem"] == k]) for s in seeds]),
+                       np.array([next(p["mean"] for p in by[a][s]["probes"] if p["problem"] == k and p["landscape"] == "next")
+                                 for s in seeds]))
+        row = dict(arm=arm, problem=k, n=len(seeds))
+        for i, key in enumerate(("during", "next_off")):
+            d = vals[arm][i] - vals[base][i]
+            m0 = vals[base][i].mean()
+            se = d.std(ddof=1) / np.sqrt(len(d))
+            row.update({key: 100 * d.mean() / m0, key + "_lo": 100 * (d.mean() - 1.96 * se) / m0,
+                        key + "_hi": 100 * (d.mean() + 1.96 * se) / m0})
+        out.append(row)
+    return out
+
+
+def oracle_fig(root="results/p3_oracle"):
+    runs = load(root)
+    arms = [a for a in ("none", "sbp", "pcc", "gated") if a in runs]
+    R = runs[arms[0]][0]["cfg"]["rounds"]
+    n_prob = runs[arms[0]][0]["cfg"]["problems"]
+    fig, axes = plt.subplots(1, 4, figsize=(7.2, 2.1), constrained_layout=True)
+    for ax, key, label in ((axes[0], "fitness", "Community fitness"),
+                           (axes[1], "diversity", "Mean pairwise Hamming distance")):
+        for a in arms:
+            x, y = mean_series(runs[a], key)
+            ax.plot(x, y, lw=1.0, color=ARM_COLORS[a], label=ARM_NAMES[a])
+        for k in range(1, n_prob):
+            ax.axvline(k * R, color=GRID, lw=0.6, zorder=0)
+        ax.set_xlabel(f"Round (new problem every {R})")
+        ax.set_ylabel(label)
+    rows = []
+    for a in arms[1:]:
+        pp = per_problem(runs, a)
+        rows += pp
+        for ax, key in ((axes[2], "during"), (axes[3], "next_off")):
+            ks = np.array([r["problem"] for r in pp]) + 1 + (arms.index(a) - 2) * 0.12
+            ax.errorbar(ks, [r[key] for r in pp], yerr=[[r[key] - r[key + "_lo"] for r in pp],
+                                                       [r[key + "_hi"] - r[key] for r in pp]],
+                        fmt="-o", ms=3, lw=1, color=ARM_COLORS[a], elinewidth=0.6, capsize=0)
+    for ax, lab in ((axes[2], "Fitness while assisted\n(% vs no AI)"),
+                    (axes[3], "Next problem, AI removed\n(% vs no AI)")):
+        ax.axhline(0, color=GRID, lw=0.6, zorder=0)
+        ax.set_xticks(range(1, n_prob + 1))
+        ax.set_xlabel("Problem")
+        ax.set_ylabel(lab)
+    axes[0].legend(frameon=False, fontsize=5.5, loc="lower right")
+    mark_panels(axes)
+    save(fig, "p3_oracle_continual")
+    write_rows(rows, "p3_oracle_per_problem")
+
+
 if __name__ == "__main__":
-    main(*sys.argv[1:])
+    if len(sys.argv) > 1 and sys.argv[1] == "oracle":
+        oracle_fig(*sys.argv[2:])
+    else:
+        main(*sys.argv[1:])
