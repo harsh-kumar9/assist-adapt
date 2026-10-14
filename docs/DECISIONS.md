@@ -284,3 +284,44 @@ distinct). Reading: when rewards go to zero, the KL term pulls the model back to
 model's spread, which keeps GRPO's signal alive. Its answers still rarely improve anyone late in
 a problem, because the community has converged. All 30 follow-ups (3 arms x {rho 1 seeds 2-5,
 rho 0.8 seeds 0-5}) submitted; KL ones at 04:0x UTC.
+
+## G-2 outcome: P3 with 6 seeds at rho = 1 and rho = 0.8 (2026-10-14)
+
+36 runs, all complete (3 arms x 6 seeds x 2 modularities). Numbers in
+results/summary/p3_stats.txt and p3_plasticity.txt (scripts/analysis/).
+
+1. The model collapses. Late in each problem, share of askers given the most common answer /
+   distinct answers in a group of 8 (mean over seeds, problems 1-4):
+   rho = 1: R_now 0.98, 0.98, 0.89, 0.94 / 1.1-1.3; step back 0.84, 0.99, 1.00, 0.86 / 1.0-1.6;
+   KL 0.77, 0.77, 0.55, 0.74 / 2.2-3.6.
+   rho = 0.8: R_now 0.83-0.89 / 1.3-1.6; step back 0.91-0.98 / 1.0-1.3; KL 0.49-0.67 / 2.7-4.1.
+2. KL to the base model is the only lever tested that keeps the model's answers varied:
+   KL - R_now in distinct answers of 8, averaged over problems: +1.47 [-0.20, +3.13], p = .07
+   (rho = 1); +1.88 [+0.79, +2.96], p = .007 (rho = 0.8). Step back does not help (it collapses
+   onto always stepping back or onto one answer).
+3. Community effects are not resolved. Over the first problem the LLM arms are within a few
+   percent of no AI (rho = 1: -3 to +1%; rho = 0.8: +3 to +13%), CIs +-10 to 20 points; the oracle
+   nudge is +19 / +28% and the gated rule +61 / +56%. Later problems and the next-problem probe
+   have CIs of +-25 to 80 points with 6 seeds.
+4. The LLM is a weak assistant here. Early in problem 1 its shown answers capture ~40% (rho = 1)
+   and ~10% (rho = 0.8) of the gain the oracle nudge would give; after shifts 3-33%, with no
+   reliable difference between arms. At rho = 0.8 it does not learn to condition on the asker.
+
+Reading: the model-side curse is real and robust (one answer for everyone, no variety left for
+GRPO); a KL anchor to the base model keeps variety; but in this setup the LLM never helps much,
+so its collapse does not measurably move the community, and 6 seeds cannot resolve community
+effects anyway.
+
+## G-3 What next for P3 (proposed)
+
+(a) Evaluate, do not just train. Save the adapter at the end of every problem (now only the last
+    one is kept) and run each checkpoint frozen as the assistant for many fresh communities on
+    the same landscape (200 per checkpoint, inference only). This turns 6 noisy trajectories
+    into tight community-level estimates: does a collapsed model help or hurt the people it
+    serves, versus a KL model, versus no AI.
+(b) Make the LLM a realistic, stronger assistant: show it a few of the community's best current
+    choices in the prompt (what an LLM trained on community data knows). This is the copy-based
+    regime where the simulations found the largest homogenisation cost, and the closest analogue
+    to an LLM learning from its users' outputs.
+(c) Dose-response on the one lever that worked: KL 0.05 vs 0.2, and an entropy bonus.
+Recommendation: (a) first with the existing design (cheap, answers the open question), then (b).

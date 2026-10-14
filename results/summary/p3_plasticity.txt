@@ -1,0 +1,16 @@
+/opt/anaconda3/lib/python3.12/site-packages/scipy/stats/_wilcoxon.py:199: UserWarning: Sample size too small for normal approximation.
+  temp = _wilcoxon_iv(x, y, zero_method, correction, alternative, method, axis)
+
+rho 1: share of the oracle nudge's available gain the model's shown answers capture, rounds 0-14 of each problem
+  now       problem 1: 0.42 (seeds 0.65 0.63 0.18 0.36 0.47 0.24)   after shifts (2-4): 0.33 (seeds 0.38 0.00 0.06 nan 1.22 0.00)
+  kl        problem 1: 0.37 (seeds 0.67 0.60 0.18 0.35 0.24 0.20)   after shifts (2-4): 0.18 (seeds 0.01 0.35 0.00 nan 0.27 0.26)
+  stepback  problem 1: 0.36 (seeds 0.57 0.58 0.28 0.40 0.12 0.21)   after shifts (2-4): 0.10 (seeds 0.11 0.04 0.06 0.07 0.14 0.16)
+  kl - now, after shifts: -0.15, p = 0.554 (n=5); wilcoxon p = 0.625
+  kl - stepback, after shifts: +0.08, p = 0.358 (n=5); wilcoxon p = 0.438
+
+rho 0.8: share of the oracle nudge's available gain the model's shown answers capture, rounds 0-14 of each problem
+  now       problem 1: 0.10 (seeds 0.09 0.07 0.07 0.19 0.11 0.09)   after shifts (2-4): 0.03 (seeds 0.17 0.00 0.00 0.00 0.00 0.00)
+  kl        problem 1: 0.10 (seeds 0.10 0.06 0.10 0.18 0.12 0.05)   after shifts (2-4): 0.10 (seeds 0.00 0.00 0.20 0.00 0.13 0.28)
+  stepback  problem 1: 0.17 (seeds 0.13 0.15 0.14 0.26 0.26 0.09)   after shifts (2-4): 0.22 (seeds 0.03 0.09 1.13 0.05 0.00 0.06)
+  kl - now, after shifts: +0.07, p = 0.320 (n=6); wilcoxon p = 0.273
+  kl - stepback, after shifts: -0.12, p = 0.498 (n=6); wilcoxon p = 0.844

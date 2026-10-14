@@ -47,8 +47,14 @@ def mean_series(rs, key):
     return xs[0][0][:n], np.nanmean(np.stack([y[:n] for _, y in xs]), 0)
 
 
-def main(root="results/p3"):
+def main(root="results/p3", oracle_root=None, tag=None):
     runs = load(root)
+    if oracle_root:  # oracle baselines on the same seeds as the LLM runs
+        seeds = {r["dir"].rsplit("_s", 1)[1] for a in runs for r in runs[a]}
+        orc = load(oracle_root)
+        for a in ("none", "sbp", "gated"):
+            runs[a] = [r for r in orc.get(a, []) if r["dir"].rsplit("_s", 1)[1] in seeds]
+        runs.pop("pcc", None)
     arms = [a for a in ARM_COLORS if a in runs]
     if not arms:
         print("no runs")
@@ -81,13 +87,15 @@ def main(root="results/p3"):
                     by_k[p["problem"]].append(p["mean"])
         ks = sorted(by_k)
         if ks:
-            ax.plot(ks, [np.mean(by_k[k]) for k in ks], "-o", ms=3, lw=1, color=ARM_COLORS[a])
+            ax.plot([k + 1 for k in ks], [np.mean(by_k[k]) for k in ks], "-o", ms=3, lw=1, color=ARM_COLORS[a])
             rows += [dict(arm=a, problem=k, next_ai_off=float(np.mean(by_k[k])), n=len(by_k[k])) for k in ks]
     ax.set_xlabel("Problem")
+    ax.set_xticks(range(1, runs[arms[0]][0]["cfg"]["problems"] + 1))
     ax.set_ylabel("Fitness on next problem,\nAI removed (30 rounds)")
-    axes[0].legend(frameon=False, fontsize=5.5, loc="lower right")
+    handles, labels = axes[0].get_legend_handles_labels()
+    axes[2].legend(handles, labels, frameon=False, fontsize=5.5, loc="upper right")
     mark_panels(axes)
-    save(fig, "p3_continual")
+    save(fig, tag or "p3_continual")
     if rows:
         write_rows(rows, "p3_probes")
 
@@ -210,4 +218,4 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "table":
         table(*sys.argv[2:])
     else:
-        main(*sys.argv[1:])
+        main(*sys.argv[1:])  # root [oracle_root] [figure name]
