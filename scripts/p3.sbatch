@@ -54,7 +54,7 @@ eval "$(/ada1/u/harsh/miniconda3/bin/conda shell.bash hook)"
 conda activate sote
 set -u
 
-cd /ada1/u/harsh/assist-adapt
+cd "${CODE:-/ada1/u/harsh/assist-adapt}"  # frozen copy of src/ when submitted with p3_submit.sh
 OUT=$1
 shift
 [ -f "$OUT/DONE" ] && { echo "already done: $OUT"; exit 0; }

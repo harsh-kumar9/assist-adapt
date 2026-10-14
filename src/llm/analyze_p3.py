@@ -14,10 +14,11 @@ import numpy as np
 
 from src.analyze import AQUA, BLUE, GRID, INK, INK2, MUTED, ORANGE, RED, mark_panels, plt, save, write_rows
 
-ARM_COLORS = {"none": MUTED, "sbp": ORANGE, "pcc": "#eda100", "now": BLUE, "kl": AQUA,
-              "edit": "#4a3aa7", "cf": RED}
+ARM_COLORS = {"none": MUTED, "sbp": ORANGE, "pcc": "#eda100", "gated": INK2, "now": BLUE, "kl": AQUA,
+              "stepback": "#e87ba4", "edit": "#4a3aa7", "cf": RED}
 ARM_NAMES = {"none": "No AI", "sbp": "SBP (oracle nudge)", "pcc": "PCC (oracle full answer)",
-             "now": "LLM, R_now", "kl": "LLM, R_now + KL", "edit": "LLM, nudge prior", "cf": "LLM, R_adapt"}
+             "gated": "Gated oracle (P2 rule)", "now": "LLM, R_now", "kl": "LLM, R_now + KL",
+             "stepback": "LLM, R_now + step back", "edit": "LLM, nudge prior", "cf": "LLM, R_adapt"}
 
 
 def load(root):
@@ -53,7 +54,7 @@ def main(root="results/p3"):
         print("no runs")
         return
     R = runs[arms[0]][0]["cfg"]["rounds"]
-    llm_arms = [a for a in arms if a not in ("none", "sbp", "pcc")]
+    llm_arms = [a for a in arms if a not in ("none", "sbp", "pcc", "gated")]
 
     fig, axes = plt.subplots(2, 3, figsize=(7.2, 4.2), constrained_layout=True)
     axes = axes.ravel()

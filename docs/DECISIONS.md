@@ -217,3 +217,25 @@ For the LLM this sets the question sharply: an assistant whose knowledge comes f
 community behaves like PCC and runs dry; one that keeps generating new options behaves like SBP.
 Whether an LLM trained with R_now keeps generating or collapses is what the R_now and KL arms
 measure.
+
+## D-013 P2 outcome and what it changes for P3 (2026-10-14)
+
+P2, ES seed 0, tested on seeds 800-999 (held-out shift 50% and use 0.75 included). The three
+rewards learn the same policy: help a lot in the first ~5 rounds (nudges first, then full
+answers), then step back about 85% of the time. At rho = 1, use 0.5, shift 20%: learned R_now
++86.5% while assisted / +26.6% after the shift with the AI gone; R_adapt +85.7 / +26.9;
+R_long +86.0 / +26.9. The fixed rules that always answer top out at +68 / +24 (25% full, 75%
+nudges). Gated rules that use the same gain information (help only if it improves the asker,
+otherwise step back) nearly match the learned policies: whichever helps more +84.8 / +24.5;
+25% full first +82.5 / +26.2. Gating with full answers only: +55 / +9.
+
+Reading: in this model the reward horizon does not matter. What matters is (1) being able to
+step back when help would not improve the asker, so people explore instead of spending a round
+on advice they reject, and (2) mixing full answers with nudges. A myopic reward already learns
+both once stepping back is an option. Learning adds a few points over a one-line rule.
+
+Change to P3 (proposed): the nudge-prior arm in D-012 assumed R_adapt would prefer nudges. It
+does not. The arm that P2 supports is abstention: if the LLM returns the asker's choices
+unchanged, the asker explores on their own that round, and that answer is scored by the
+exploration's gain. Arms become R_now, R_now + KL (both running), and R_now + step back. The
+counterfactual R_adapt arm stays on hold unless the LLM arms show something P2 could not.

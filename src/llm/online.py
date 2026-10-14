@@ -36,9 +36,13 @@ USER = ("A team's approach is 20 yes/no choices, written as digits (1 = yes).\n"
         "Recommend values for choices 1-10. Reply with exactly ten digits and nothing else.")
 
 
-def render(code, N=20, M=10):
+STEP_BACK = "\nIf no change would help, repeat the current values and the team will explore on its own."
+
+
+def render(code, N=20, M=10, step_back=False):
     bits = [(int(code) >> j) & 1 for j in range(N)]
-    return USER.format(mc="".join(map(str, bits[:M])), rest="".join(map(str, bits[M:])))
+    text = USER.format(mc="".join(map(str, bits[:M])), rest="".join(map(str, bits[M:])))
+    return text + STEP_BACK if step_back else text
 
 
 def parse(text, M=10):
@@ -173,10 +177,12 @@ def entropy(xs):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--assistant", default="llm", help="llm | none | sbp | pcc")
+    ap.add_argument("--assistant", default="llm", help="llm | none | sbp | pcc | gated")
     ap.add_argument("--reward", default="now", choices=["now", "edit"])
     ap.add_argument("--edit-cost", type=float, default=0.8)
     ap.add_argument("--kl", type=float, default=0.0)
+    ap.add_argument("--step-back", action="store_true",
+                    help="unchanged answer = asker explores on their own; scored by that exploration (D-013)")
     ap.add_argument("--model", default="Qwen/Qwen3-4B-Instruct-2507")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--rho", type=float, default=1.0)
@@ -237,18 +243,30 @@ def main():
             prop = np.where(social, codes[np.minimum(best_nb, n - 1)], prop)
             idx = np.flatnonzero(query)
             rec = dict(problem=k, round=t, n_query=int(len(idx)))
-            if len(idx) and args.assistant in ("sbp", "pcc"):
+            if len(idx) and args.assistant == "gated":  # help with whichever gains more, else step back
+                pcc = propose("pcc", codes, fit, F, M, idx, u_ai[idx])
+                sbp = propose("sbp", codes, fit, F, M, idx, u_ai[idx])
+                gp, gs = F[pcc] - fit[idx], F[sbp] - fit[idx]
+                best = np.where(gp >= gs, pcc, sbp)
+                helps = np.maximum(gp, gs) > 0
+                prop[idx] = np.where(helps, best, prop[idx])
+                rec.update(step_back=float(1 - helps.mean()), full=float((helps & (gp >= gs)).mean()))
+            elif len(idx) and args.assistant in ("sbp", "pcc"):
                 prop[idx] = propose(args.assistant, codes, fit, F, M, idx, u_ai[idx])
                 shown = prop[idx] & mc
                 rec.update(shown_edit=float(np.mean([popcount((s ^ c) & mc) for s, c in zip(shown, codes[idx])])))
             elif len(idx) and llm:
-                out, P, texts = llm.sample([render(codes[i]) for i in idx], args.G, seed=args.seed * 100003 + k * 1000 + t)
+                out, P, texts = llm.sample([render(codes[i], step_back=args.step_back) for i in idx], args.G,
+                                           seed=args.seed * 100003 + k * 1000 + t)
+                explore_gain = np.maximum(0, F[prop[idx]] - fit[idx]) * 10  # what the asker gets on their own
                 R, gains, edits, mods = [], [], [], []
                 for gi, i in enumerate(idx):
                     row = []
                     for j in range(args.G):
                         s = parse(texts[gi * args.G + j])
                         r, g, e = score(s, int(codes[i]), float(fit[i]), F, M, args.reward, args.edit_cost)
+                        if args.step_back and s is not None and s == (int(codes[i]) & int(mc)):
+                            r, g = float(explore_gain[gi]), float(explore_gain[gi])  # stepping back = exploring
                         row.append(r)
                         mods.append(-1 if s is None else s)
                         gains.append(g)
@@ -259,8 +277,11 @@ def main():
                 mods = np.array(mods).reshape(len(idx), args.G)
                 shown = mods[:, 0]
                 ok = shown >= 0
-                prop[idx[ok]] = (codes[idx[ok]] & ~mc) | shown[ok]
+                back = ok & (shown == (codes[idx] & mc)) if args.step_back else np.zeros(len(idx), bool)
+                give = ok & ~back
+                prop[idx[give]] = (codes[idx[give]] & ~mc) | shown[give]
                 stats = llm.update(out, P, adv.reshape(-1))
+                rec.update(step_back=float(back.mean()))
                 g_arr, e_arr = np.array(gains).reshape(len(idx), args.G), np.array(edits).reshape(len(idx), args.G)
                 rec.update(valid=float(ok.mean()), reward=float(R.mean()), gain_shown=float(g_arr[:, 0].mean()),
                            improve_shown=float((g_arr[:, 0] > 0).mean()), shown_edit=float(e_arr[ok, 0].mean()) if ok.any() else None,

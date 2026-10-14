@@ -315,12 +315,21 @@ def p2(d="results/p2"):
             ax.annotate("nudge", (xs[0], ys[0]), xytext=(3, 3), textcoords="offset points", fontsize=5.5, color=MUTED)
             for p in scheds:
                 ax.plot(get(p, st, "now")[0], get(p, st, "shift_off")[0], "s", ms=3, color=MUTED, mfc="none", mew=0.6)
+            gated = [p for p in ["gated_nudge", "gated_mix0.25", "gated_mix0.5", "gated_mix0.75", "gated_full"]
+                     if p in policies]
+            if gated:
+                gx = [get(p, st, "now")[0] for p in gated]
+                gy = [get(p, st, "shift_off")[0] for p in gated]
+                ax.plot(gx, gy, "-D", ms=2.5, lw=0.8, color=INK2, zorder=2, label="gated mixes")
+                if "gated_best" in policies:
+                    ax.plot(get("gated_best", st, "now")[0], get("gated_best", st, "shift_off")[0], "*", ms=6,
+                            color=INK2, zorder=3, label="gated, best gain")
             for p in learned:
                 x, y = get(p, st, "now"), get(p, st, "shift_off")
                 c = P2_LEARNED[p.split("_")[0]]
                 ax.errorbar(x[0], y[0], xerr=[[x[0] - x[1]], [x[2] - x[0]]], yerr=[[y[0] - y[1]], [y[2] - y[0]]],
                             fmt="o", ms=3.5, color=c, elinewidth=0.6, capsize=0, mec="#fcfcfb", mew=0.5,
-                            label="R_" + p.split("_")[0] if p.endswith("s0") else None)
+                            label="learned, R_" + p.split("_")[0] if p.endswith("s0") else None, zorder=4)
             ax.set_title(f"ρ = {st[0]:g}, shift {st[1]:g}, use {st[2]:g}", loc="left", color=INK)
             ax.set_xlabel("Fitness while assisted (% vs no AI)")
             ax.axhline(0, color=GRID, lw=0.6, zorder=0)
