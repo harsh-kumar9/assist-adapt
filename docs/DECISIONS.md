@@ -356,3 +356,24 @@ yes and added: KL-anchored training is the realistic RLHF condition (no-KL is th
 was the only lever that kept the model varied in (a). thumbskl and pairwisekl, beta 0.05, same 6 seeds
 x rho {1, 0.8}: 24 more runs, ~1 GPU-hour each. Not added for the scalar arm, which (a) already
 covers with KL (without context). Total (b): 5 arms x 6 seeds x 2 rho = 60 runs.
+
+## G-3 (a) outcome: frozen checkpoints on fresh communities (2026-10-14)
+
+12 jobs, 200 fresh communities per training seed, 6 seeds x rho {1, 0.8}; % vs no AI on the same
+communities, mean over seeds with t(5) CIs (results/summary/p3eval_a.csv, figures/p3eval_a).
+
+rho = 1, while assisted / next problem with the AI removed:
+untrained LLM -4.0 [-5.7, -2.4] / -1.4; R_now (collapsed) -2.1 [-15.2, +11.1] / -4.9;
+KL +6.9 [-17.4, +31.1] / +1.9; step back -7.1 [-17.1, +2.9] / -6.0 [-10.8, -1.1];
+oracles: SBP +19.3 / +3.4, PCC +43.3 / +5.8, gated +78.2 / +26.0.
+rho = 0.8: untrained -4.3 [-7.2, -1.4]; R_now -5.7; KL +1.4; step back +5.8; oracles +32 / +49 / +70.
+
+The collapsed R_now model gave 14 distinct answers to ~54k askers per seed (rho = 1); KL 370;
+untrained ~700. Diversity after 30 rounds: none 4.70, R_now 4.13, KL 3.66, step back 4.57, PCC 2.05.
+KL - R_now: +8.9 (rho 1) and +7.2 (rho 0.8) points while assisted, n.s.
+
+Reading: the collapsed model neither helps nor measurably hurts the people it serves, and it
+homogenises them only a little, because its answers rarely improve anyone and so are rarely
+adopted. Homogenisation needs answers that get adopted. The untrained model is slightly harmful:
+its answers cost people rounds. This is why (b) matters: with the community's best approaches in
+the prompt, answers can help and get adopted. (b) launched 2026-10-14 19:2x UTC, 60 runs.
