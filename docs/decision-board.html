@@ -109,7 +109,7 @@ a { color: var(--accent); }
 
 <main class="wrap">
   <header class="stack col">
-    <div class="eyebrow">assist-adapt · decision board · updated 14 Oct 2026</div>
+    <div class="eyebrow">assist-adapt · decision board · updated 14 Oct 2026, 09:00 UTC</div>
     <h1>Help now, adapt later</h1>
     <p class="lede">Can an AI assistant make a community better at today's problem while leaving it worse at the next one, and what keeps an LLM assistant that keeps learning from the community it advises from making everyone the same? We test both in the NK model of Fazelpour, O'Brien &amp; Rubin (2026).</p>
   </header>
@@ -120,7 +120,8 @@ a { color: var(--accent); }
       <div class="stage"><span class="chip done">Done</span><b>Robustness</b><span>Denser network, 50% shift, K = 5</span></div>
       <div class="stage"><span class="chip done">Done</span><b>P2 Learned help</b><span>Full answer, nudge or step back; 3 rewards × 2 seeds</span></div>
       <div class="stage"><span class="chip done">Done</span><b>P3 oracle</b><span>Four problems in a row, 300 seeds</span></div>
-      <div class="stage"><span class="chip wait">Queued</span><b>P3 LLM</b><span>Qwen3-4B learning online, 3 arms × 2 seeds on mira/vega</span></div>
+      <div class="stage"><span class="chip done">Done</span><b>P3 LLM</b><span>Qwen3-4B learning online, 3 arms × 6 seeds × ρ 1 and 0.8</span></div>
+      <div class="stage"><span class="chip you">Your call</span><b>P3 next</b><span>Evaluate checkpoints on many communities; stronger assistant</span></div>
     </div>
   </section>
 
@@ -162,6 +163,13 @@ a { color: var(--accent); }
           <p class="detail">Four problems in a row, fitness while assisted vs no AI. PCC: +27.8%, then +4.0%, −3.6%, +2.7% (the last three not significant). SBP: +13.2%, +5.6%, +3.4%, +4.1%. Gated: +58.7%, +17.4%, +6.1%, +6.0%, the only one clearly ahead in every problem. Copying from peers offers nothing once every peer holds the same solution.</p>
         </div>
       </div>
+      <div class="answer">
+        <div class="rq">RQ6 · LLM learning online</div>
+        <div class="body">
+          <p class="verdict">The model collapses onto one answer for nearly everyone within the first problem. A KL anchor to the base model is the only lever tested that keeps its answers varied.</p>
+          <p class="detail">36 runs, 6 seeds per arm at ρ = 1 and 0.8. Late in each problem, 83–100% of askers get the same answer from R_now and from step back, with 1.0–1.6 distinct answers in a group of 8. Step back collapses onto always stepping back or onto one answer. KL keeps 2.2–4.1 distinct and 49–77% on the top answer (KL − R_now: +1.9 distinct, p = .007 at ρ = 0.8; +1.5, p = .07 at ρ = 1). The effect on the community is not resolved: the LLM is a weak assistant here (about 40% of the oracle nudge's early gain at ρ = 1, 10% at ρ = 0.8, within a few percent of no AI over a problem), and 6 seeds give CIs of ±20–80 points after the first problem.</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -173,9 +181,9 @@ a { color: var(--accent); }
         <thead><tr><th>Lever</th><th>What the sims say</th><th>In P3</th></tr></thead>
         <tbody>
           <tr><td>Reward that sees the community later (R_adapt)</td><td>No effect once stepping back is allowed (P2)</td><td>On hold</td></tr>
-          <tr><td>Being able to step back</td><td>The biggest effect: +20 points while assisted, same or better after (P2), and the best assistant over continual problems</td><td>Arm: R_now + step back</td></tr>
+          <tr><td>Being able to step back</td><td>The biggest effect: +20 points while assisted, same or better after (P2), and the best assistant over continual problems</td><td>Does not transfer: the LLM learns to always step back or collapses onto one answer</td></tr>
           <tr><td>Kind of help: nudge vs full answer</td><td>Full answers homogenise; mixing both beats either alone (P1b, P2)</td><td>Measured: how much of the asker's module each answer rewrites</td></tr>
-          <tr><td>Keep the model's own answers varied (KL to base)</td><td>Not testable with oracles</td><td>Arm: R_now + KL</td></tr>
+          <tr><td>Keep the model's own answers varied (KL to base)</td><td>Not testable with oracles</td><td>Works: the only arm that does not collapse; community effect not yet resolved</td></tr>
           <tr><td>Replay of earlier askers; several assistants instead of one</td><td>Not yet tested</td><td>Later</td></tr>
         </tbody>
       </table>
@@ -188,17 +196,17 @@ a { color: var(--accent); }
     <p style="color:var(--ink-2);margin-bottom:14px">Reply in chat with the ID and yes, no, or a change. Details are in <code>docs/DECISIONS.md</code>.</p>
     <div class="calls">
       <article class="call key">
-        <header><span class="id">D-013</span><h3>P3's third arm: step back instead of the nudge prior</h3></header>
-        <p class="rec"><b>Recommend yes (already queued).</b> P2 showed the nudge prior's premise was wrong (R_adapt does not prefer nudges) and that stepping back is what matters. In the LLM arm, returning the asker's choices unchanged means the asker explores on their own, and that answer is scored by the exploration's gain. The prompt tells the model it can do this. The counterfactual R_adapt arm stays on hold.</p>
-        <p class="cost">Note: this arm's prompt has one extra sentence, so prompt and option are tested together.</p>
+        <header><span class="id">G-3</span><h3>Next for the LLM stage</h3></header>
+        <p class="rec"><b>Recommend (a), then (b).</b> (a) Evaluate, not just train: keep the adapter from the end of every problem and run each one frozen as the assistant for 200 fresh communities on the same problem (inference only). That gives community-level effects with tight CIs: does a collapsed model help or hurt the people it serves, compared with a KL model and with no AI? (b) Make the assistant realistic and stronger: show it a few of the community's best current choices, which is what an LLM trained on its users' outputs knows. That is the copy-based regime where the simulations found the largest cost.</p>
+        <ul>
+          <li>(c) Dose-response on the one lever that worked: KL 0.05 vs 0.2, plus an entropy bonus.</li>
+          <li>Needs a small code change: today only the last adapter of each run is kept.</li>
+        </ul>
+        <p class="cost">Cost: (a) a rerun of 2–3 arms with checkpoints (about 6–10 GPU-hours) plus short inference jobs; (b) a new prompt and a smoke test, then the same 3 × 6 design.</p>
       </article>
       <article class="call">
-        <header><span class="id">G-2</span><h3>What to run after the first LLM results</h3></header>
-        <p class="rec"><b>Recommend deciding at the gate.</b> If the arms separate on two seeds, run 4 more seeds each, plus ρ = 0.8 where the right answer depends on the asker (about 12 GPU-hours). If R_now does not collapse at all, the curse does not appear for a learned assistant here, which is itself a finding, and we go straight to the ρ = 0.8 setting.</p>
-      </article>
-      <article class="call">
-        <header><span class="id">Framing</span><h3>The story has moved</h3></header>
-        <p class="rec"><b>Recommend holding until P3.</b> We started from "design the reward." The sims say the reward horizon does not matter and the action set does: whether the assistant can step back, and whether it rewrites or nudges. That points to a paper about abstention and the kind of help, with the LLM runs as the test of whether a learned assistant finds this on its own.</p>
+        <header><span class="id">Framing</span><h3>Where the story stands</h3></header>
+        <p class="rec">Sims: help that looks good during use can leave people worse at the next problem; the cause is whole copied answers; a longer reward does not fix it, stepping back does. LLM: an assistant trained online on its users collapses onto one answer, and only a KL anchor keeps it varied. The missing piece is whether that collapse costs the community, which G-3 (a) answers.</p>
       </article>
     </div>
   </section>
@@ -224,6 +232,14 @@ a { color: var(--accent); }
     <figure>
       <div class="plate"><img src="figures/p3_oracle_continual.png" alt="Four panels: fitness and diversity over four successive problems, and per-problem percent differences while assisted and on the next problem without AI."></div>
       <figcaption><b>Continual problems, oracle assistants.</b> 300 seeds, ρ = 1, use 0.5, a new problem every 60 rounds (20% of tables redrawn). (c) Mean fitness while assisted in each problem. (d) Mean fitness over 30 rounds on the next problem without the assistant. % vs no AI, 95% CIs.</figcaption>
+    </figure>
+    <figure>
+      <div class="plate"><img src="figures/p3_llm_rho1.png" alt="Six panels for the LLM runs at modularity 1: community fitness, diversity and distinct modules over rounds, share of askers on the most common answer, distinct answers in a group of 8, and next-problem fitness without AI."></div>
+      <figcaption><b>LLM assistant learning online, ρ = 1.</b> Qwen3-4B-Instruct with LoRA, one GRPO step per round, 6 seeds per arm, a new problem every 60 rounds. Oracle baselines on the same seeds. (d) Share of askers given the most common answer. (e) Distinct answers among the 8 sampled per asker. (f) Fitness over 30 rounds on the next problem without the assistant.</figcaption>
+    </figure>
+    <figure>
+      <div class="plate"><img src="figures/p3_llm_rho08.png" alt="The same six panels at modularity 0.8."></div>
+      <figcaption><b>The same at ρ = 0.8</b>, where the best answer depends on the asker's other choices.</figcaption>
     </figure>
   </section>
 
