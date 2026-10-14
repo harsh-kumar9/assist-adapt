@@ -246,3 +246,14 @@ does not. The arm that P2 supports is abstention: if the LLM returns the asker's
 unchanged, the asker explores on their own that round, and that answer is scored by the
 exploration's gain. Arms become R_now, R_now + KL (both running), and R_now + step back. The
 counterfactual R_adapt arm stays on hold unless the LLM arms show something P2 could not.
+
+## P3 gate 1, first look (2026-10-14, R_now seed 0, problem 1 of 4)
+
+The model learns at first: in rounds 0-5 its answers improve the asker 31-43% of the time, about
+3.4 of 8 samples differ, and 46-77% of askers get distinct answers. Mean fitness over the first
+problem is 0.44 (no AI 0.34, oracle nudge 0.40, oracle full answer 0.61, same seed). Then it
+collapses. By round 10 only 2% of its answers help, while the oracle full answer could still
+give gains of 1.1-1.5 (x10 fitness units). By round 30, 95% of askers get the identical answer
+(1101001010) and its 8 samples are nearly the same (1.3 distinct), so GRPO has no signal. After
+the shift it keeps giving that answer to everyone (share 1.0) and does not recover. This is
+the curse as D-012 defined it, in the first run. Waiting for the KL and step-back arms and seed 1.
