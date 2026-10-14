@@ -39,6 +39,9 @@ case "$NAME" in
       --seeds-per-gen 32 --workers "$W" --out results/p2 ;;
   p2_eval)
     $PY -u -m src.p2 eval --workers "$W" --out results/p2 ;;
+  p3_oracle)  # continual problems with oracle assistants, CPU; baseline for the LLM runs
+    for a in none sbp pcc; do for s in $(seq 0 299); do echo "$a $s"; done; done | \
+      xargs -P "$W" -n 2 sh -c '[ -f results/p3_oracle/$0_s$1/DONE ] || '"$PY"' -m src.llm.online --assistant $0 --seed $1 --problems 4 --rounds 60 --out results/p3_oracle/$0_s$1 > /dev/null' ;;
   *) echo "unknown sweep $NAME"; exit 1 ;;
 esac
 date

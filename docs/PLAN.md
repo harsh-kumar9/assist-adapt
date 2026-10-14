@@ -108,20 +108,28 @@ Gate: R_adapt beats R_long and the best simple rule on held-out landscapes at ma
 If R_long is as good, the problem is the evaluation horizon, not the objective, and that is
 the finding. If nothing beats the simple rule, the simple rule is the finding.
 
-### P3. Outside the simulator (deferred, GPU)
+### P3. An LLM assistant that keeps learning (D-012, running)
 
-Two options, pick one after P2:
+The human study is off. P3 asks the continual-learning version of the question: an assistant
+that is updated from the community it advises gets hit twice. Its advice narrows the
+community (P1b), and then its own training data narrows, because it only ever sees the askers it
+has already made alike. Its samples collapse, and after a shift it has nothing varied left to
+learn from.
 
-- (a) LLM assistant. Render the task as text and GRPO-train Qwen3.5-9B on mira/vega with
-  R_now versus R_adapt rewards from the simulator. Tests whether the reward recipe changes an
-  LLM policy the same way it changes the small selector.
-- (b) People. A browser version of the task: 10 unaided trials, 30 trials with an assigned
-  assistant, 20 unaided trials on a shifted landscape. Communities are the unit of analysis.
-  This follows the design of Kumar et al. 2024 (arXiv:2410.03703), which compared assisted and
-  later unassisted performance on creativity tasks.
+Setup: Qwen3-4B-Instruct-2507 with LoRA writes the new values for choices 1-10 when an agent
+asks. No oracle. One GRPO step per round (8 suggestions per asker, scored by the simulator, the
+first one shown). Four problems in a row, 60 rounds each, each new problem redraws 20% of the
+last one's payoff tables. The P1 probe (30 rounds on the next problem without the assistant)
+runs at the end of every problem. The oracle assistants (none, SBP, PCC) run through the same
+driver on CPU for the baseline (`results/p3_oracle`, 300 seeds).
 
-My lean is (b). It is the stronger evidence that the effect is about people and not about the
-simulator. (a) is cheaper and fits the RL-rewards angle.
+Arms, cheapest first: R_now; R_now + KL to the base model (the standard RL fix, keeps the
+model's samples varied); a nudge prior (gain discounted by how much of the module is
+rewritten), if P2 says R_adapt prefers nudges; R_adapt per query through counterfactual
+branches, if the prior is not enough. Later: replay of earlier askers, several assistants.
+
+Gate 0: a one-GPU smoke run emits valid answers and completes GRPO steps. Gate 1: R_now on 2
+seeds learns within a problem and the collapse measures move.
 
 ## What the results could look like
 

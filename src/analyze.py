@@ -261,6 +261,115 @@ def p1(d, use_main=0.5, t_main=30):
     save(fig, f"{tag}_mechanism")
 
 
+# ---------------------------------------------------------------- P2
+
+P2_LEARNED = {"now": BLUE, "long": AQUA, "adapt": ORANGE}
+
+
+def p2(d="results/p2"):
+    """Learned help-mode policies against fixed mixes of full answers and nudges (D-011)."""
+    import collections
+    rows = json.load(open(os.path.join(d, "eval.json")))
+    by = collections.defaultdict(dict)
+    for r in rows:
+        by[(r["rho"], r["shift"], r["use"], r["seed"])][r["policy"]] = r
+    policies = sorted({r["policy"] for r in rows} - {"none"})
+    settings = sorted({(r["rho"], r["shift"], r["use"]) for r in rows})
+    out = []
+    for st in settings:
+        keys = [k for k in by if k[:3] == st]
+        base = {m: np.array([by[k]["none"][m] for k in keys]) for m in ("now", "shift_off", "same_on")}
+        for pol in policies:
+            row = dict(rho=st[0], shift=st[1], use=st[2], policy=pol)
+            for m in ("now", "shift_off", "same_on"):
+                pct, lo, hi, pv = paired(np.array([by[k][pol][m] for k in keys]), base[m])
+                row.update({m: pct, m + "_lo": lo, m + "_hi": hi, m + "_p": pv})
+            tot = sum(np.array([by[k][pol][a] for k in keys]).sum() for a in ("full", "nudge", "back"))
+            for a in ("full", "nudge", "back"):
+                row["share_" + a] = float(np.array([by[k][pol][a] for k in keys]).sum() / max(tot, 1))
+            out.append(row)
+    write_rows(out, "p2_eval")
+
+    def get(pol, st, m):
+        r = next(r for r in out if r["policy"] == pol and (r["rho"], r["shift"], r["use"]) == st)
+        return r[m], r[m + "_lo"], r[m + "_hi"]
+
+    learned = [p for p in policies if p.split("_")[0] in P2_LEARNED]
+    mixes = ["always_nudge", "mix0.25", "mix0.5", "mix0.75", "always_full"]
+    scheds = [p for p in policies if p.startswith("full_first")]
+    main = [st for st in settings if st[1] == 0.2 and st[2] == 0.5]
+    held = [st for st in settings if st not in main]
+    for name, sts in (("p2_frontier", main), ("p2_heldout", held)):
+        if not sts:
+            continue
+        nrow = (len(sts) + 2) // 3
+        fig, axs = plt.subplots(nrow, 3, figsize=(7.2, 2.3 * nrow), constrained_layout=True, squeeze=False)
+        axs = list(axs.ravel())
+        for ax, st in zip(axs, sts):
+            xs = [get(p, st, "now")[0] for p in mixes]
+            ys = [get(p, st, "shift_off")[0] for p in mixes]
+            ax.plot(xs, ys, "-", color=MUTED, lw=0.8, zorder=1)
+            for p, x, y in zip(mixes, xs, ys):
+                ax.plot(x, y, "o", ms=3, color=MUTED, zorder=2)
+            ax.annotate("full", (xs[-1], ys[-1]), xytext=(3, -8), textcoords="offset points", fontsize=5.5, color=MUTED)
+            ax.annotate("nudge", (xs[0], ys[0]), xytext=(3, 3), textcoords="offset points", fontsize=5.5, color=MUTED)
+            for p in scheds:
+                ax.plot(get(p, st, "now")[0], get(p, st, "shift_off")[0], "s", ms=3, color=MUTED, mfc="none", mew=0.6)
+            for p in learned:
+                x, y = get(p, st, "now"), get(p, st, "shift_off")
+                c = P2_LEARNED[p.split("_")[0]]
+                ax.errorbar(x[0], y[0], xerr=[[x[0] - x[1]], [x[2] - x[0]]], yerr=[[y[0] - y[1]], [y[2] - y[0]]],
+                            fmt="o", ms=3.5, color=c, elinewidth=0.6, capsize=0, mec="#fcfcfb", mew=0.5,
+                            label="R_" + p.split("_")[0] if p.endswith("s0") else None)
+            ax.set_title(f"ρ = {st[0]:g}, shift {st[1]:g}, use {st[2]:g}", loc="left", color=INK)
+            ax.set_xlabel("Fitness while assisted (% vs no AI)")
+            ax.axhline(0, color=GRID, lw=0.6, zorder=0)
+        axs[0].set_ylabel("Fitness after shift, AI removed\n(% vs no AI)")
+        axs[0].legend(frameon=False, loc="upper left", fontsize=6, handletextpad=0.2)
+        mark_panels(axs)
+        save(fig, name)
+
+    # action mix over the assisted rounds, learned policies, highest rho, main setting
+    st = main[-1]
+    fig, axes = plt.subplots(1, len(learned), figsize=(7.2, 1.9), constrained_layout=True, squeeze=False)
+    for ax, p in zip(axes[0], learned):
+        acts = np.array([r["acts"] for r in rows if r["policy"] == p and (r["rho"], r["shift"], r["use"]) == st])
+        share = acts.sum(0) / np.maximum(acts.sum(0).sum(1, keepdims=True), 1)
+        ax.stackplot(np.arange(1, share.shape[0] + 1), share.T, colors=["#eda100", ORANGE, "#c3c2b7"],
+                     labels=["full answer", "nudge", "step back"], edgecolor="#fcfcfb", linewidth=0.3)
+        ax.set_title(p.replace("_s", ", ES seed "), loc="left", color=INK)
+        ax.set_xlabel("Assisted round")
+        ax.set_ylim(0, 1)
+    axes[0][0].set_ylabel("Share of queries")
+    axes[0][-1].legend(frameon=False, loc="lower right", fontsize=5.5)
+    mark_panels(axes[0])
+    save(fig, "p2_actions")
+
+
+def robust(tags=("p1b", "rb_edge10", "rb_shift50", "rb_k5"), rho=1.0, use=0.5, T=30):
+    """One panel per robustness condition: while assisted vs after shift with AI off."""
+    import csv
+    labels = {"p1b": "Main", "rb_edge10": "Denser network (p_edge 0.1)", "rb_shift50": "Bigger shift (50%)",
+              "rb_k5": "Smoother landscape (K = 5)"}
+    fig, axes = plt.subplots(1, len(tags), figsize=(7.2, 2.2), constrained_layout=True)
+    for ax, t in zip(axes, tags):
+        rows = {r["assistant"]: r for r in csv.DictReader(open(f"results/summary/{t}_probes.csv"))
+                if float(r["rho"]) == rho and float(r["use"]) == use and int(float(r["T"])) == T}
+        for a, r in rows.items():
+            x, y = float(r["during"]), float(r["shift_off"])
+            ax.errorbar(x, y, xerr=[[x - float(r["during_lo"])], [float(r["during_hi"]) - x]],
+                        yerr=[[y - float(r["shift_off_lo"])], [float(r["shift_off_hi"]) - y]], fmt="o", ms=3,
+                        color=COLORS[a], elinewidth=0.6, capsize=0, mec="#fcfcfb", mew=0.5,
+                        label=NAMES[a] if t == tags[0] else None)
+        ax.axhline(0, color=GRID, lw=0.6, zorder=0)
+        ax.set_title(labels.get(t, t), loc="left", color=INK)
+        ax.set_xlabel("While assisted (% vs no AI)")
+    axes[0].set_ylabel("After shift, AI removed\n(% vs no AI)")
+    axes[0].legend(frameon=False, fontsize=5.5, loc="lower right", handletextpad=0.2)
+    mark_panels(axes)
+    save(fig, "robustness")
+
+
 def p1_reversals(tag, data, cfg, T, during, post, li_same, li_shift, rhos, uses, assistants):
     """Ranking flips between assistants: A beats B while assisted (paired p < .05) but B beats A
     after a shift with the AI off (paired p < .05). Same rho, use and T for both."""
@@ -350,5 +459,9 @@ def write_rows(rows, name):
 if __name__ == "__main__":
     if sys.argv[1] == "gate":
         p1_gate(sys.argv[2] if len(sys.argv) > 2 else "p1")
+    elif sys.argv[1] == "robust":
+        robust()
+    elif sys.argv[1] == "p2":
+        p2(*sys.argv[2:])
     else:
         {"p0": p0, "p1": p1}[sys.argv[1]](sys.argv[2])

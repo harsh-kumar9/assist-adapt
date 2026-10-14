@@ -192,3 +192,12 @@ Gate 0 (smoke): the model emits valid ten-digit answers and a GRPO step runs. Ga
 seeds): reward rises within the first problem and the collapse measures move. If the model
 cannot learn the landscape at all in 60 rounds, we give it more rounds per problem before
 adding arms.
+
+## D-003 robustness outcome (2026-10-14)
+
+P1b rerun on the same 1000 seeds with a denser network (p_edge 0.1), a bigger shift (50% of
+tables) and a smoother landscape (K = 5). The pattern holds in all three. At rho = 1, use 0.5,
+T = 30, every whole-module copier loses 2 to 6 times more to the shift than SBP. With a 50%
+shift, PCC goes from +43.6% while assisted to -1.3% after and SBP is the only assistant still
+ahead of no AI (+1.8%). Bonferroni ranking flips: 6 (main), 8, 14, 16. Shift penalty vs
+diversity lost: r = 0.63, 0.52, 0.48, 0.49. The open network density does not change the result.
