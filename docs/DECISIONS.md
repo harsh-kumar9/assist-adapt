@@ -3,7 +3,7 @@
 Status: `paper` = copied from Fazelpour, O'Brien & Rubin (arXiv:2608.19390), no judgment involved.
 `proposed` = my call for the pilot, waiting for Harsh. `ratified` = Harsh agreed.
 
-## D-001 Scope: one model, one new probe (proposed, 2026-10-13)
+## D-001 Scope: one model, one new probe (ratified 2026-10-13)
 
 We start from the paper's NK model unchanged and add one thing: after T rounds with the AI, the
 problem changes and the AI goes away. We drop skill decay, preference change, assistant
@@ -23,7 +23,7 @@ computational module of the best agent), TDR (same, from a random top-10% agent)
 single flip in the computational module for this agent). Agents adopt anything only if it is
 better. One action per round. Measures: mean fitness, mean pairwise Hamming distance and its AUC.
 
-## D-003 Things the paper leaves open (proposed)
+## D-003 Things the paper leaves open (ratified 2026-10-13)
 
 - Network density: p_edge = 0.05 (mean degree about 5). The paper does not say. Check 0.1 later.
 - Fitness scale: (f / max f)^8, the Lazer & Friedman (2007) transform. The paper says
@@ -35,7 +35,7 @@ better. One action per round. Measures: mean fitness, mean pairwise Hamming dist
 - Same landscape, network, starting points and per-round coin flips across conditions for a
   given seed, so all comparisons are paired.
 
-## D-004 The shift (proposed)
+## D-004 The shift (ratified 2026-10-13)
 
 The related problem keeps the dependency structure and redraws the payoff tables of 20% of the
 decisions (4 of 20), picked at random across both modules, independent of anything in the run.
@@ -45,7 +45,7 @@ Probe times T in {10, 30, 60, 100}; 30 rounds after each probe.
 Why 20%: enough that the old optimum is usually no longer optimal, small enough that old
 experience still helps. 50% is a later sensitivity check.
 
-## D-005 New assistant rules (proposed)
+## D-005 New assistant rules (ratified 2026-10-13)
 
 Both pick from the same candidates SBP sees (the M single flips of the agent's computational
 module) and only among improving flips:
@@ -58,7 +58,7 @@ q in {3, all}. Same information and the same evaluation budget as SBP. Rank-base
 transform in D-003 does not matter. Randomising and diversifying are separate rules so we can
 tell "less greedy" apart from "diversity-seeking".
 
-## D-006 P1 outcomes (proposed)
+## D-006 P1 outcomes (ratified 2026-10-13)
 
 - Fitness while assisted: mean fitness over rounds 1..T. This is what someone evaluating the
   assistant during use would see.
@@ -76,7 +76,7 @@ CPU work runs directly on ada (`scripts/ada_sweep.sh`, nohup, a lock file agains
 launches, finished shards skipped). mira and vega are for GPU jobs only, through SLURM. P0-P2 are
 CPU-only. P3 is the first stage that needs GPUs.
 
-## D-008 P2 learner (proposed, gated on P1)
+## D-008 P2 learner (superseded by D-011)
 
 A small selector over the same candidate flips: softmax over a linear score of a few features
 (fitness gain, gain rank, how common the agent's current value is on that decision, round).
@@ -89,13 +89,13 @@ Why ES and a linear policy: a handful of parameters, no credit-assignment machin
 learned weights are readable. If this finds nothing the simple rules miss, a bigger learner is
 unlikely to be worth it.
 
-## D-009 LLM and human stages deferred (proposed)
+## D-009 LLM and human stages deferred (ruled 2026-10-13: LLM path, no human study)
 
 Decide after P2. Options: (a) GRPO an LLM assistant (Qwen3.5-9B on mira/vega) on a text version
 of the task with the P2 rewards, (b) a browser version of the task with people, following the
 design of Kumar et al. 2024 (assisted rounds, then unassisted rounds on a shifted problem).
 
-## D-010 P1b: copy-based rules (proposed, run 2026-10-13)
+## D-010 P1b: copy-based rules (ratified 2026-10-13)
 
 P1 at 1000 seeds put the effect in the copy-based assistants, not the single-flip ones. SBP
 barely reduces diversity, so choosing among its flips had nothing to fix. NP and TDR at rho = 1
@@ -113,7 +113,7 @@ So before P2 we ran the simple rules where the effect is, on the same seeds, rho
 
 Same candidates or a superset of TDR's, same information as the paper's designs.
 
-## G-1 Gate P1 -> P2 (proposed)
+## G-1 Gate P1 -> P2 (ratified 2026-10-13)
 
 Gate (1) holds: how an assistant looks while in use does not predict what it leaves behind,
 and the ranking flips. Gate (2) for the single-flip rules: nothing to fix. Gate (2) for the
@@ -129,7 +129,7 @@ roughly halves diversity at rho = 1. Across all P1b settings the shift penalty c
 diversity lost at the shift, r = 0.63. The split that matters is copying a whole solution
 versus a one-step nudge, not how the copy source is sampled.
 
-## D-011 P2 retargeted: full answer, nudge, or step back (proposed, replaces D-008)
+## D-011 P2 retargeted: full answer, nudge, or step back (ratified 2026-10-13, replaces D-008)
 
 Each time an agent asks, the assistant picks one of three actions:
 
@@ -149,3 +149,46 @@ Why: P1b shows the trade-off sits between full answers and nudges. The mixes and
 are the simple rules; if one of them already matches the learned policy, that rule is the
 result. The action set also maps onto LLM assistance (write it for me, suggest an edit, let
 me try), which is what a P3 GRPO run would train.
+
+## Rulings, 2026-10-13
+
+Harsh: "run all of these, they sound good. human study probably not possible, we just focus on
+LLMs." Ratified: D-001, D-003 (plus the robustness sweep), D-004, D-006, D-010, D-011, G-1.
+D-009: the human study is off; P3 is the LLM stage.
+
+## D-012 P3: an LLM assistant that keeps learning inside the community (proposed)
+
+Harsh, 2026-10-13: "how do you make the LLMs break curse of homogenization over the course of
+continual learning". Human study is off; the next stage is LLMs.
+
+Setup (`src/llm/online.py`). The community is the paper's model at rho = 1 (where P1b found the
+largest shift penalty). When an agent asks, Qwen3-4B-Instruct-2507 (LoRA r = 16) sees the agent's
+20 choices as digits and writes new values for choices 1-10. There is no oracle: what the model
+knows about the landscape comes only from its own updates. After each round, one GRPO step: G = 8
+suggestions per asker, each scored by the simulator, the first one shown to the agent. Problems
+come in sequence (4 problems x 60 rounds); each new problem redraws 20% of the last one's payoff
+tables. At the end of each problem we copy the community and run 30 rounds without the assistant
+on the next problem (the P1 probe). The same driver runs none, SBP and PCC on CPU with the same
+draws, so oracle and LLM runs on a seed are paired.
+
+The curse, as we would measure it: the model's suggestions collapse to one answer for everyone
+(share of askers getting the most common suggestion, entropy across askers), the community's
+diversity follows, the model's own samples collapse (distinct suggestions within a group of 8,
+so GRPO has no signal left), and after each shift both recover more slowly than the problem
+before.
+
+Levers, cheapest first, each a separate arm on the same seeds:
+
+1. Reward sees only this answer (R_now): the baseline, expected to collapse.
+2. Standard RL fix: KL to the base model. Keeps the model's samples varied; the question is
+   whether that keeps the community varied.
+3. Nudge prior: a suggestion's gain is discounted by how much of the module it rewrites.
+   P1b's finding as a per-query reward. Used only if P2 shows R_adapt prefers nudges.
+4. Reward sees the community later (R_adapt per query via counterfactual branches), if 3 is not
+   enough.
+5. Replay of earlier askers, and several assistants instead of one, later.
+
+Gate 0 (smoke): the model emits valid ten-digit answers and a GRPO step runs. Gate 1 (R_now, 2
+seeds): reward rises within the first problem and the collapse measures move. If the model
+cannot learn the landscape at all in 60 rounds, we give it more rounds per problem before
+adding arms.

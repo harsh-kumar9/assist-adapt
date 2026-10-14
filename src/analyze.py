@@ -139,7 +139,7 @@ def p1(d, use_main=0.5, t_main=30):
     data, cfg = load(d)
     T, during, post = p1_values(data, cfg)
     shifts = [float(s) for s in cfg["shifts"].split(",")]
-    li_same, li_shift = shifts.index(0.0), shifts.index(0.2)
+    li_same, li_shift = shifts.index(0.0), next(i for i, x in enumerate(shifts) if x > 0)
     rhos = sorted(set(data["rho"].tolist()))
     rho_main = max(rhos)
     uses = sorted({u for a, u in cfg["cells"] if a != "none"})

@@ -25,6 +25,20 @@ case "$NAME" in
     $PY -u -m src.run --name p1b --seeds 0:1000 --rhos 0.8,0.9,1.0 \
       --assistants np,tdr,tdr25,tdrinv,pcc,sbp --uses 0.25,0.5,0.75 \
       --probe-times 10,30,60,100 --shifts 0,0.2 --post-rounds 30 --workers "$W" ;;
+  rb_edge10|rb_shift50|rb_k5)  # robustness of P1b (D-003): denser network, bigger shift, K = 5
+    EXTRA=""
+    [ "$NAME" = rb_edge10 ] && EXTRA="--p-edge 0.1 --shifts 0,0.2"
+    [ "$NAME" = rb_shift50 ] && EXTRA="--shifts 0,0.5"
+    [ "$NAME" = rb_k5 ] && EXTRA="--K 5 --shifts 0,0.2"
+    $PY -u -m src.run --name "$NAME" --seeds 0:1000 --rhos 0.8,0.9,1.0 \
+      --assistants np,tdr,tdr25,tdrinv,pcc,sbp --uses 0.25,0.5,0.75 \
+      --probe-times 10,30,60,100 --post-rounds 30 --workers "$W" $EXTRA ;;
+  p2_now_*|p2_long_*|p2_adapt_*)  # P2 (D-011): ES on the help-mode policy, e.g. p2_adapt_0
+    R=$(echo "$NAME" | cut -d_ -f2); S=$(echo "$NAME" | cut -d_ -f3)
+    $PY -u -m src.p2 train --reward "$R" --es-seed "$S" --gens 200 --pairs 16 \
+      --seeds-per-gen 32 --workers "$W" --out results/p2 ;;
+  p2_eval)
+    $PY -u -m src.p2 eval --workers "$W" --out results/p2 ;;
   *) echo "unknown sweep $NAME"; exit 1 ;;
 esac
 date
