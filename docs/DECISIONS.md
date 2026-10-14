@@ -325,3 +325,28 @@ effects anyway.
     to an LLM learning from its users' outputs.
 (c) Dose-response on the one lever that worked: KL 0.05 vs 0.2, and an entropy bonus.
 Recommendation: (a) first with the existing design (cheap, answers the open question), then (b).
+
+## G-3 rulings and D-014 (b): user feedback as the training signal (2026-10-14)
+
+Harsh: "do a then b", then "start b once a finishes. we can connect it to RLHF and preference
+learning paradigm. e.g., model developers ask for feedback whether a session is good or bad, or
+show two outputs and ask to select".
+
+(a) runs as 12 evaluation jobs (src/llm/evaluate.py): each seed's final R_now, KL and step-back
+adapters, the base model, no AI and the oracles serve the same 200 fresh communities on the
+problem the adapters last trained on, then the P1 probes. Training now also keeps an adapter
+per problem (adapter_p<k>) for (b).
+
+(b) design (proposed details): the assistant sees the 3 best distinct approaches currently used
+in the community, with their scores (`--context 3`), and learns only from user feedback of the
+kind deployed assistants collect:
+- thumbs (`--reward thumbs`): the asker tries the answer and gives a thumbs up if it improved
+  their score. All helpful answers count the same.
+- pick one of two (`--reward pairwise`): the asker sees two answers and picks the one better for
+  them; when both are equally (un)helpful they pick at random. 8 samples = 4 such pairs.
+- scalar gain (`--reward now`), with context, as the bridge to (a).
+Why this connects: user feedback is individual and immediate, which is R_now. No single user's
+rating sees what the community can do later. Hypothesis: thumbs (satisficing) collapses less
+than pairwise (always pushes to the single best answer). Runs: 3 arms x 6 seeds x rho {1, 0.8},
+no KL first; then KL on whichever feedback collapses most; then the (a) evaluator on the
+per-problem adapters.

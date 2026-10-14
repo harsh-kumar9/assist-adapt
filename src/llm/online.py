@@ -191,6 +191,26 @@ def score(sugg, cur, fit_cur, F, M, kind, edit_cost):
     raise ValueError(kind)
 
 
+def feedback(gains, kind, rng):
+    """User feedback on G answers per asker, as deployed assistants collect it (G-3 b).
+
+    thumbs:   the asker tries the answer and gives a thumbs up if it improved their score.
+    pairwise: the asker sees two answers side by side and picks the one that is better for them;
+              when both are equally (un)helpful they pick at random. Answers are paired (0,1),
+              (2,3), ...; the asker is shown the first pair and adopts what they picked.
+    Returns rewards (n, G) and the index of the answer the asker adopts.
+    """
+    n, G = gains.shape
+    if kind == "thumbs":
+        return (gains > 0).astype(float), np.zeros(n, np.int64)
+    R = np.zeros((n, G))
+    for a in range(0, G - 1, 2):
+        x, y = gains[:, a], gains[:, a + 1]
+        first = np.where(x == y, rng.random(n) < 0.5, x > y)
+        R[:, a], R[:, a + 1] = first, ~first
+    return R, np.where(R[:, 0] > 0, 0, 1)
+
+
 # ---------------------------------------------------------------- driver
 
 def entropy(xs):
@@ -202,7 +222,8 @@ def entropy(xs):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--assistant", default="llm", help="llm | none | sbp | pcc | gated")
-    ap.add_argument("--reward", default="now", choices=["now", "edit"])
+    ap.add_argument("--reward", default="now", choices=["now", "edit", "thumbs", "pairwise"],
+                    help="now: scalar gain; thumbs: 1 if it helped; pairwise: asker picks the better of two")
     ap.add_argument("--edit-cost", type=float, default=0.8)
     ap.add_argument("--kl", type=float, default=0.0)
     ap.add_argument("--context", type=int, default=0,
@@ -291,7 +312,8 @@ def main():
                     row = []
                     for j in range(args.G):
                         s = parse(texts[gi * args.G + j])
-                        r, g, e = score(s, int(codes[i]), float(fit[i]), F, M, args.reward, args.edit_cost)
+                        r, g, e = score(s, int(codes[i]), float(fit[i]), F, M,
+                                        args.reward if args.reward in ("now", "edit") else "now", args.edit_cost)
                         if args.step_back and s is not None and s == (int(codes[i]) & int(mc)):
                             r, g = float(explore_gain[gi]), float(explore_gain[gi])  # stepping back = exploring
                         row.append(r)
@@ -300,9 +322,13 @@ def main():
                         edits.append(e)
                     R.append(row)
                 R = np.array(R)
-                adv = (R - R.mean(1, keepdims=True)) / (R.std(1, keepdims=True) + 1e-4)
                 mods = np.array(mods).reshape(len(idx), args.G)
-                shown = mods[:, 0]
+                pick = np.zeros(len(idx), np.int64)  # which sample the asker sees and may adopt
+                if args.reward in ("thumbs", "pairwise"):
+                    R, pick = feedback(np.array(gains).reshape(len(idx), args.G), args.reward,
+                                       np.random.default_rng([args.seed, 9, k, t]))
+                adv = (R - R.mean(1, keepdims=True)) / (R.std(1, keepdims=True) + 1e-4)
+                shown = mods[np.arange(len(idx)), pick]
                 ok = shown >= 0
                 back = ok & (shown == (codes[idx] & mc)) if args.step_back else np.zeros(len(idx), bool)
                 give = ok & ~back
@@ -310,8 +336,9 @@ def main():
                 stats = llm.update(out, P, adv.reshape(-1))
                 rec.update(step_back=float(back.mean()))
                 g_arr, e_arr = np.array(gains).reshape(len(idx), args.G), np.array(edits).reshape(len(idx), args.G)
-                rec.update(valid=float(ok.mean()), reward=float(R.mean()), gain_shown=float(g_arr[:, 0].mean()),
-                           improve_shown=float((g_arr[:, 0] > 0).mean()), shown_edit=float(e_arr[ok, 0].mean()) if ok.any() else None,
+                g_sh, e_sh = g_arr[np.arange(len(idx)), pick], e_arr[np.arange(len(idx)), pick]
+                rec.update(valid=float(ok.mean()), reward=float(R.mean()), gain_shown=float(g_sh.mean()),
+                           improve_shown=float((g_sh > 0).mean()), shown_edit=float(e_sh[ok].mean()) if ok.any() else None,
                            shown_unique=float(len(np.unique(shown[ok])) / max(1, ok.sum())),
                            shown_entropy=entropy(shown[ok]) if ok.any() else None,
                            top_share=float(np.unique(shown[ok], return_counts=True)[1].max() / ok.sum()) if ok.any() else None,
