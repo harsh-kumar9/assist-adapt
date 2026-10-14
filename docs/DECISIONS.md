@@ -257,3 +257,21 @@ give gains of 1.1-1.5 (x10 fitness units). By round 30, 95% of askers get the id
 (1101001010) and its 8 samples are nearly the same (1.3 distinct), so GRPO has no signal. After
 the shift it keeps giving that answer to everyone (share 1.0) and does not recover. This is
 the curse as D-012 defined it, in the first run. Waiting for the KL and step-back arms and seed 1.
+
+## G-2 More seeds and rho = 0.8 (Harsh, 2026-10-14: "run more seeds once these finish, and add rho 0.8")
+
+Each arm's follow-ups go in once both of its first two seeds have finished and been checked.
+rho = 1: seeds 2-5 for R_now, KL and step back (results/p3). rho = 0.8: seeds 0-5 for all
+three (results/p3_r08), where the best module depends on the asker's other choices. Oracle
+baselines at rho = 0.8 (none, SBP, PCC, gated; 300 seeds) run on ada CPU (results/p3_oracle_r08).
+R_now and step back submitted 2026-10-14 03:4x UTC; KL follows when kl_s0 and kl_s1 finish.
+
+First two seeds, all three arms (before the extra seeds): every arm collapses onto one answer
+for most askers by the second half of problem 1 (share 0.82-0.98), and the 8 samples per asker
+stop differing (1.0-1.8 distinct). R_now seed 1 collapsed onto echoing the asker's own choices.
+Step back learned to abstain and then abstained almost always (seed 1: ~100% from late problem
+1), which equals no assistant. KL keeps samples varied a little longer but still collapses.
+Caveat for reading recovery after shifts: after a shift the oracles often find nothing to gain
+either (the converged community is often still at a local optimum in choices 1-10), so "does
+not recover" is mostly "nothing to recover". The LLM also never sees other agents, so the fair
+oracle comparison is SBP; early in problem 1 the LLM reaches ~0.6 of SBP's gain.
