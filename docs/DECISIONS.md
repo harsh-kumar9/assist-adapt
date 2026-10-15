@@ -443,3 +443,22 @@ pairwisefix seeds 0-11; pairwisefix also at rho = 0.8 seeds 0-5. 24 training run
 problem adapters. Once (i) and the training are done, evaluate the new runs at all four checkpoints
 into the same result files (the evaluator skips assistants already present, communities are seeded,
 so the new arms are paired with the old ones).
+
+### G-4 (i) and G-5 results (2026-10-15)
+
+Gap trajectory, existing (b) arms pooled, 6 seeds, trained LLM - oracle nudge (SBP), % of no-AI:
+| checkpoint after problem | rho 1 while assisted | rho 1 next problem, AI off | rho 0.8 next problem, AI off |
+|---|---|---|---|
+| 1 | +1.5 | -14.9 [-25.3, -4.5] p = .014 | -12.6 p < .001 |
+| 2 | -1.2 | -9.3 [-15.8, -2.7] p = .015 | -10.1 p = .022 |
+| 3 | +0.5 | -5.4 n.s. | -11.8 p = .001 |
+| 4 | +0.1 | -2.9 n.s. | -10.1 p < .001 |
+At rho = 1 the later cost shrinks steadily over continual training while help in the moment stays
+equal to the nudge; at rho = 0.8 it stays at 10-13 points (and the LLM is ~30 points below the
+nudge while assisted there).
+
+G-5: with the fixed chooser no pick-one-of-two run degenerates (min valid >= 0.98 over 18 runs,
+vs 0.00 for one seed per rho before). It still collapses fully: late share on the top answer
+0.98-1.00, 1.0 distinct of 8. Thumbs keeps more variety than fixed pick-one-of-two with 12 seeds
+at rho = 1: +0.73 distinct of 8 [+0.44, +1.01], p < .001; rho = 0.8 +0.25 n.s. (6 seeds).
+So the degeneration was the chooser artifact; the collapse under pick-one-of-two is real.

@@ -169,8 +169,9 @@ def main():
     ap.add_argument("--seed", type=int, required=True)
     ap.add_argument("--runs-dir", required=True, help="where <arm>_s<seed>/adapter live")
     ap.add_argument("--arms", default="now,kl,stepback")
-    ap.add_argument("--problem", type=int, default=3, help="landscape index the adapters last trained on")
-    ap.add_argument("--adapter", default="adapter", help="adapter dir name inside each run")
+    ap.add_argument("--problem", default="3", help="landscape index the adapters last trained on; "
+                    "a comma list evaluates several checkpoints in one job")
+    ap.add_argument("--adapter", default="adapter", help="adapter dir name inside each run; 'auto' = adapter_p<k>")
     ap.add_argument("--communities", type=int, default=200)
     ap.add_argument("--T", type=int, default=30)
     ap.add_argument("--post", type=int, default=30)
@@ -184,34 +185,37 @@ def main():
     lands = landscapes(args.rho, args.seed, cfg0["problems"], cfg0["shift"])
     comms = [Community(100, N, H, 0.05, np.random.default_rng([args.seed, 50, c])) for c in range(args.communities)]
     os.makedirs(args.out, exist_ok=True)
-    path = os.path.join(args.out, f"rho{args.rho:g}_s{args.seed}_p{args.problem}_{args.adapter}.json")
-    done = json.load(open(path)) if os.path.exists(path) else {}
-
-    jobs = [("none", None), ("sbp", Oracle("sbp")), ("pcc", Oracle("pcc")), ("gated", Oracle("gated"))]
+    engine = tok = None
     if not args.no_llm:
         from transformers import AutoTokenizer
         from vllm import LLM
         tok = AutoTokenizer.from_pretrained(args.model)
         engine = LLM(model=args.model, enable_lora=True, max_lora_rank=16, max_loras=1, dtype="bfloat16",
                      gpu_memory_utilization=0.85, max_model_len=512, enable_prefix_caching=True, seed=args.seed)
-        jobs.append(("base", LLMAssistant(engine, tok, "base", context=cfg0.get("context", 0))))
-        for i, arm in enumerate(args.arms.split(",")):
-            run = os.path.join(args.runs_dir, f"{arm}_s{args.seed}")
-            rc = json.load(open(os.path.join(run, "config.json")))
-            jobs.append((arm, LLMAssistant(engine, tok, arm, lora_path=os.path.abspath(os.path.join(run, args.adapter)),
-                                           lora_id=i + 1, step_back=rc.get("step_back", False),
-                                           context=rc.get("context", 0))))
     t0 = time.time()
-    for tag, assistant in jobs:
-        if tag in done:
-            continue
-        done[tag] = evaluate(assistant, comms, lands, args.problem, args.T, args.post, args.use, args.seed, tag)
-        json.dump(done, open(path + ".tmp", "w"))
-        os.replace(path + ".tmp", path)
-        r = done[tag]
-        print(f"{tag:9s} during {np.mean(r['during']):.3f} same_on {np.mean(r['same_on']):.3f} "
-              f"next_off {np.mean(r['next_off']):.3f} div_T {np.mean(r['div_T']):.2f} "
-              f"top_share {r.get('top_share')} distinct {r.get('distinct_answers')} {time.time() - t0:.0f}s", flush=True)
+    for k in [int(x) for x in str(args.problem).split(",")]:
+        adapter = f"adapter_p{k}" if args.adapter == "auto" else args.adapter
+        path = os.path.join(args.out, f"rho{args.rho:g}_s{args.seed}_p{k}_{adapter}.json")
+        done = json.load(open(path)) if os.path.exists(path) else {}
+        jobs = [("none", None), ("sbp", Oracle("sbp")), ("pcc", Oracle("pcc")), ("gated", Oracle("gated"))]
+        if engine is not None:
+            jobs.append(("base", LLMAssistant(engine, tok, "base", context=cfg0.get("context", 0))))
+            for i, arm in enumerate(args.arms.split(",")):
+                run = os.path.join(args.runs_dir, f"{arm}_s{args.seed}")
+                rc = json.load(open(os.path.join(run, "config.json")))
+                jobs.append((arm, LLMAssistant(engine, tok, arm, lora_path=os.path.abspath(os.path.join(run, adapter)),
+                                               lora_id=100 * (k + 1) + i + 1, step_back=rc.get("step_back", False),
+                                               context=rc.get("context", 0))))
+        for tag, assistant in jobs:
+            if tag in done:
+                continue
+            done[tag] = evaluate(assistant, comms, lands, k, args.T, args.post, args.use, args.seed, tag)
+            json.dump(done, open(path + ".tmp", "w"))
+            os.replace(path + ".tmp", path)
+            r = done[tag]
+            print(f"p{k} {tag:9s} during {np.mean(r['during']):.3f} same_on {np.mean(r['same_on']):.3f} "
+                  f"next_off {np.mean(r['next_off']):.3f} div_T {np.mean(r['div_T']):.2f} "
+                  f"top_share {r.get('top_share')} distinct {r.get('distinct_answers')} {time.time() - t0:.0f}s", flush=True)
 
 
 if __name__ == "__main__":
