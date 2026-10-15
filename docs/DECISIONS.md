@@ -383,3 +383,26 @@ per-problem adapter is saved. With the community's best approaches in the prompt
 improve 56-68% of askers in rounds 1-3 (without context ~30%); by round 3, 92% of askers get the same
 answer and by round 5, 100%; distinct community modules 90 -> 22 (round 3) -> 6 (round 5) -> 1. It
 learns "copy the best for everyone" within a few rounds: NP behaviour, adopted. 59 runs queued.
+
+## (b) training results (2026-10-15)
+
+60 runs, all complete; numbers in results/summary/p3b_stats.txt (scripts/analysis/p3b_stats.py),
+figures p3b_llm_rho1 / p3b_llm_rho08. With the community's 3 best approaches in the prompt:
+
+1. Every feedback type collapses, faster than in (a). Late in each problem, share of askers on the
+   top answer 0.70-1.00 and 1.0-2.2 distinct answers of 8 (rho = 1). Community modules at round 10:
+   4.8-7.7 for the LLM arms vs 47 with no AI, 32 with SBP, 1.2 with PCC (rho = 1); ~30 vs 50 / 43 /
+   27 at rho = 0.8. The model's answers are adopted and the community follows them.
+2. The feedback form matters for how far the model collapses. Pick one of two collapses completely
+   (top share 0.97-1.00, 1.0 distinct of 8, excluding degenerate seeds). Thumbs keeps the most
+   variety: thumbs - pairwise +0.66 distinct of 8 [+0.02, +1.29], p = .046 at rho = 1 (n = 5,
+   degenerate seed excluded); +0.42 n.s. at rho = 0.8. Pairwise - scalar: -0.24 (p = .08) and
+   -0.64 (p = .05).
+3. KL rescues pick-one-of-two at rho = 0.8 (+1.09 distinct, p = .025), n.s. at rho = 1; it does
+   nothing for thumbs. Without KL, one pairwise seed per rho degenerated into free-text reasoning
+   ("We are given 20 yes/no choices ...") with 0% valid answers by problem 4. Caveat: my simulated
+   user picks at random between a malformed and a useless valid answer, so malformed output is not
+   penalised; a real user would prefer the well-formed one. With KL this never happened.
+4. Community fitness: as noisy as (a) with 6 seeds (problem 1 at rho = 1: LLM arms +8 to +18%,
+   n.s.; PCC +35%, gated +61%). The frozen-checkpoint evaluation (24 jobs, checkpoints after
+   problems 1 and 4, 100 fresh communities each) is running.
