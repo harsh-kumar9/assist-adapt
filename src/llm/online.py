@@ -191,13 +191,15 @@ def score(sugg, cur, fit_cur, F, M, kind, edit_cost):
     raise ValueError(kind)
 
 
-def feedback(gains, kind, rng):
+def feedback(gains, kind, rng, valid=None):
     """User feedback on G answers per asker, as deployed assistants collect it (G-3 b).
 
     thumbs:   the asker tries the answer and gives a thumbs up if it improved their score.
     pairwise: the asker sees two answers side by side and picks the one that is better for them;
               when both are equally (un)helpful they pick at random. Answers are paired (0,1),
               (2,3), ...; the asker is shown the first pair and adopts what they picked.
+              With `valid` (G-5), a tie between a well-formed and a malformed answer goes to the
+              well-formed one, as a real user would choose.
     Returns rewards (n, G) and the index of the answer the asker adopts.
     """
     n, G = gains.shape
@@ -206,7 +208,11 @@ def feedback(gains, kind, rng):
     R = np.zeros((n, G))
     for a in range(0, G - 1, 2):
         x, y = gains[:, a], gains[:, a + 1]
-        first = np.where(x == y, rng.random(n) < 0.5, x > y)
+        tie_pick = rng.random(n) < 0.5
+        if valid is not None:
+            va, vb = valid[:, a], valid[:, a + 1]
+            tie_pick = np.where(va != vb, va, tie_pick)
+        first = np.where(x == y, tie_pick, x > y)
         R[:, a], R[:, a + 1] = first, ~first
     return R, np.where(R[:, 0] > 0, 0, 1)
 
@@ -226,6 +232,8 @@ def main():
                     help="now: scalar gain; thumbs: 1 if it helped; pairwise: asker picks the better of two")
     ap.add_argument("--edit-cost", type=float, default=0.8)
     ap.add_argument("--kl", type=float, default=0.0)
+    ap.add_argument("--prefer-valid", action="store_true",
+                    help="pairwise: ties between a well-formed and a malformed answer go to the well-formed one (G-5)")
     ap.add_argument("--context", type=int, default=0,
                     help="show the k best distinct configurations in the community (G-3 b)")
     ap.add_argument("--step-back", action="store_true",
@@ -326,7 +334,8 @@ def main():
                 pick = np.zeros(len(idx), np.int64)  # which sample the asker sees and may adopt
                 if args.reward in ("thumbs", "pairwise"):
                     R, pick = feedback(np.array(gains).reshape(len(idx), args.G), args.reward,
-                                       np.random.default_rng([args.seed, 9, k, t]))
+                                       np.random.default_rng([args.seed, 9, k, t]),
+                                       valid=(mods >= 0) if args.prefer_valid else None)
                 adv = (R - R.mean(1, keepdims=True)) / (R.std(1, keepdims=True) + 1e-4)
                 shown = mods[np.arange(len(idx)), pick]
                 ok = shown >= 0

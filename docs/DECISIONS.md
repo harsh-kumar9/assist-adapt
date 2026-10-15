@@ -430,3 +430,16 @@ After problem 4: rho = 1 +19.5 now, +1.8 after (n.s.), LLM - SBP after -2.9 (n.s
 Feedback form and KL: no reliable differences in community outcomes between arms. They differ in
 how many distinct answers the model gives (eval-time distinct answers at rho = 1, after problem 4:
 pairwise 92, R_now 329, thumbs 340, thumbs + KL 349).
+
+## G-4 and G-5 (Harsh, 2026-10-15: "do G-4 and G-5")
+
+G-5: `--prefer-valid` for pick one of two. On a tie in gain, a well-formed answer beats a malformed
+one (100% vs ~45% before); other ties stay coin flips; a real gain still wins. New arm name
+pairwisefix. Not rerun with KL: the KL version never degenerated (valid ~100%), so the fix barely
+changes it.
+G-4: (i) frozen evaluation of the existing (b) checkpoints after problems 2 and 3 (adapter_p1,
+adapter_p2), same design as p0/p3: 24 jobs. (ii) more seeds at rho = 1: thumbs seeds 6-11 and
+pairwisefix seeds 0-11; pairwisefix also at rho = 0.8 seeds 0-5. 24 training runs, all with per-
+problem adapters. Once (i) and the training are done, evaluate the new runs at all four checkpoints
+into the same result files (the evaluator skips assistants already present, communities are seeded,
+so the new arms are paired with the old ones).

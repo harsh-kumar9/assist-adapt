@@ -19,7 +19,7 @@ from scipy import stats
 from src.analyze import GRID, INK, INK2, MUTED, mark_panels, plt, save, write_rows
 from src.llm.analyze_p3 import ARM_COLORS, ARM_NAMES
 
-ORDER = ["sbp", "pcc", "gated", "base", "now", "kl", "stepback", "thumbs", "thumbskl", "pairwise", "pairwisekl"]
+ORDER = ["sbp", "pcc", "gated", "base", "now", "kl", "stepback", "thumbs", "thumbskl", "pairwise", "pairwisekl", "pairwisefix"]
 COLORS = dict(ARM_COLORS, base="#b8b6ad", pcc="#eda100")
 NAMES = dict(ARM_NAMES, base="LLM, untrained", now="LLM, R_now", kl="LLM, R_now + KL",
              stepback="LLM, R_now + step back")
