@@ -19,9 +19,9 @@ from scipy import stats
 from src.analyze import GRID, INK, INK2, MUTED, mark_panels, plt, save, write_rows
 from src.llm.analyze_p3 import ARM_COLORS, ARM_NAMES
 
-ORDER = ["sbp", "pcc", "gated", "base", "now", "kl", "stepback"]
+ORDER = ["sbp", "pcc", "gated", "base", "now", "kl", "stepback", "thumbs", "thumbskl", "pairwise", "pairwisekl"]
 COLORS = dict(ARM_COLORS, base="#b8b6ad", pcc="#eda100")
-NAMES = dict(ARM_NAMES, base="LLM, untrained", now="LLM, R_now (collapsed)", kl="LLM, R_now + KL",
+NAMES = dict(ARM_NAMES, base="LLM, untrained", now="LLM, R_now", kl="LLM, R_now + KL",
              stepback="LLM, R_now + step back")
 
 
@@ -75,7 +75,8 @@ def main(d="results/p3eval/a"):
     print()
     for rho in rhos:
         seeds = sorted(s for r, s in res if r == rho)
-        for a, b in (("kl", "now"), ("now", "base"), ("kl", "base"), ("stepback", "now")):
+        for a, b in (("kl", "now"), ("now", "base"), ("kl", "base"), ("stepback", "now"), ("thumbs", "pairwise"),
+                     ("thumbskl", "thumbs"), ("pairwisekl", "pairwise"), ("now", "base"), ("pairwise", "base")):
             for key in ("during", "next_off"):
                 dd = [100 * (np.mean(res[(rho, s)][a][key]) - np.mean(res[(rho, s)][b][key]))
                       / np.mean(res[(rho, s)]["none"][key]) for s in seeds if a in res[(rho, s)] and b in res[(rho, s)]]

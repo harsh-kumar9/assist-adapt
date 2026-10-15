@@ -1,0 +1,20 @@
+
+b_p0 rho 0.8 (n=6 seeds; checkpoint after problem 1)
+  while assisted             trained LLM vs no AI   +1.6 [-6.6, +9.7] p=0.640 | untrained vs no AI   -2.0 [-7.1, +3.0] p=0.348 | trained LLM - SBP  -29.6 [-36.3, -22.9] p=0.000
+  next problem, AI removed   trained LLM vs no AI   -5.3 [-8.2, -2.4] p=0.005 | untrained vs no AI   -6.5 [-7.5, -5.4] p=0.000 | trained LLM - SBP  -12.6 [-16.5, -8.6] p=0.000
+  diversity after 30 rounds: none 5.02 sbp 4.51 pcc 4.13 base 4.52 trained LLM 4.17
+
+b_p0 rho 1 (n=6 seeds; checkpoint after problem 1)
+  while assisted             trained LLM vs no AI  +18.9 [+2.2, +35.6] p=0.033 | untrained vs no AI  +13.2 [+4.6, +21.7] p=0.011 | trained LLM - SBP   +1.5 [-13.4, +16.3] p=0.809
+  next problem, AI removed   trained LLM vs no AI   -7.0 [-16.3, +2.3] p=0.110 | untrained vs no AI   -4.3 [-11.6, +2.9] p=0.183 | trained LLM - SBP  -14.9 [-25.3, -4.5] p=0.014
+  diversity after 30 rounds: none 4.67 sbp 4.44 pcc 2.04 base 2.96 trained LLM 2.52
+
+b_p3 rho 0.8 (n=6 seeds; checkpoint after problem 4)
+  while assisted             trained LLM vs no AI   -1.6 [-5.6, +2.4] p=0.344 | untrained vs no AI   -0.7 [-5.9, +4.5] p=0.746 | trained LLM - SBP  -33.3 [-39.1, -27.4] p=0.000
+  next problem, AI removed   trained LLM vs no AI   -2.7 [-7.6, +2.2] p=0.219 | untrained vs no AI   -1.5 [-9.4, +6.5] p=0.656 | trained LLM - SBP  -10.1 [-13.3, -6.9] p=0.000
+  diversity after 30 rounds: none 5.04 sbp 4.46 pcc 4.00 base 4.52 trained LLM 4.28
+
+b_p3 rho 1 (n=6 seeds; checkpoint after problem 4)
+  while assisted             trained LLM vs no AI  +19.5 [+11.4, +27.7] p=0.002 | untrained vs no AI  +15.8 [+7.7, +23.8] p=0.004 | trained LLM - SBP   +0.1 [-10.3, +10.4] p=0.987
+  next problem, AI removed   trained LLM vs no AI   +1.8 [-3.2, +6.8] p=0.394 | untrained vs no AI   +0.1 [-5.0, +5.1] p=0.975 | trained LLM - SBP   -2.9 [-10.1, +4.4] p=0.354
+  diversity after 30 rounds: none 4.64 sbp 4.21 pcc 2.03 base 2.96 trained LLM 2.60

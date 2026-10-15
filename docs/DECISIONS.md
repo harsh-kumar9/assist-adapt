@@ -406,3 +406,27 @@ figures p3b_llm_rho1 / p3b_llm_rho08. With the community's 3 best approaches in 
 4. Community fitness: as noisy as (a) with 6 seeds (problem 1 at rho = 1: LLM arms +8 to +18%,
    n.s.; PCC +35%, gated +61%). The frozen-checkpoint evaluation (24 jobs, checkpoints after
    problems 1 and 4, 100 fresh communities each) is running.
+
+## (b) frozen evaluation (2026-10-15)
+
+24 jobs: checkpoints after problem 1 and after problem 4, every (b) arm plus the untrained model
+(both with the community context) and the oracles on 100 fresh communities per seed, 6 seeds x rho
+{1, 0.8}. Per arm: results/summary/p3eval_b_p0.csv, p3eval_b_p3.csv; trained arms pooled:
+p3b_eval_pooled.txt (scripts/analysis/p3b_eval_pooled.py). % vs no AI, t(5) over seeds.
+
+rho = 1, after problem 1 (pooled over the 5 trained arms):
+- while assisted +18.9 [+2.2, +35.6] (p = .03); next problem with the AI removed -7.0 (p = .11)
+- trained LLM - oracle nudge (SBP): +1.5 while assisted (n.s.), -14.9 [-25.3, -4.5] (p = .014)
+  after the shift. Same help now, worse later: the P1 dissociation, now for learned LLM assistants.
+- diversity after 30 rounds: no AI 4.67, SBP 4.44, trained LLM 2.52, untrained LLM 2.96, PCC 2.04
+- the untrained model with context already does most of this: +13.2 now, -4.3 after. Showing the
+  best approaches is enough to make an LLM a copy-the-best assistant; training on user feedback
+  adds a little help now and none of the later cost goes away.
+rho = 0.8, after problem 1: +1.6 while assisted (n.s.), -5.3 [-8.2, -2.4] after (p = .005); the
+  untrained model -6.5 after (p < .001). Copying the best approaches without fitting the asker hurts
+  at lower modularity, as NP does in the paper.
+After problem 4: rho = 1 +19.5 now, +1.8 after (n.s.), LLM - SBP after -2.9 (n.s.); rho = 0.8
+  -1.6 / -2.7 (n.s.). The later-cost gap is not there at the last checkpoint.
+Feedback form and KL: no reliable differences in community outcomes between arms. They differ in
+how many distinct answers the model gives (eval-time distinct answers at rho = 1, after problem 4:
+pairwise 92, R_now 329, thumbs 340, thumbs + KL 349).
