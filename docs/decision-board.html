@@ -109,7 +109,7 @@ a { color: var(--accent); }
 
 <main class="wrap">
   <header class="stack col">
-    <div class="eyebrow">assist-adapt · decision board · updated 15 Oct 2026</div>
+    <div class="eyebrow">assist-adapt · decision board · updated 16 Oct 2026</div>
     <h1>Help now, adapt later</h1>
     <p class="lede">Can an AI assistant make a community better at today's problem while leaving it worse at the next one, and what keeps an LLM assistant that keeps learning from the community it advises from making everyone the same? We test both in the NK model of Fazelpour, O'Brien &amp; Rubin (2026).</p>
   </header>
@@ -122,7 +122,8 @@ a { color: var(--accent); }
       <div class="stage"><span class="chip done">Done</span><b>P3 oracle</b><span>Four problems in a row, 300 seeds</span></div>
       <div class="stage"><span class="chip done">Done</span><b>P3 LLM</b><span>Qwen3-4B learning online, 3 arms × 6 seeds × ρ 1 and 0.8</span></div>
       <div class="stage"><span class="chip done">Done</span><b>P3 (a) + (b)</b><span>Frozen evaluation; LLM sees the community, learns from thumbs or pick-one-of-two</span></div>
-      <div class="stage"><span class="chip you">Your call</span><b>Next</b><span>Firm up the LLM result; framing</span></div>
+      <div class="stage"><span class="chip done">Done</span><b>G-4, G-5</b><span>12 seeds, all checkpoints; fixed chooser</span></div>
+      <div class="stage"><span class="chip you">Your call</span><b>Next</b><span>Write-up or one more stage</span></div>
     </div>
   </section>
 
@@ -174,8 +175,8 @@ a { color: var(--accent); }
       <div class="answer">
         <div class="rq">RQ7 · LLM that sees what works for others</div>
         <div class="body">
-          <p class="verdict">It becomes a copy-the-best assistant: as helpful as the oracle nudge in the moment, worse for the community once the problem changes.</p>
-          <p class="detail">The LLM sees the community's 3 best current approaches and learns from user feedback (scalar, thumbs up/down, pick one of two; KL on the last two). Frozen checkpoints after problem 1 on 100 fresh communities × 6 seeds, ρ = 1: +18.9% while assisted [+2.2, +35.6], the same as the oracle nudge (+1.5, n.s.), but −14.9 points against the nudge on the next problem with the AI gone [−25.3, −4.5], p = .014. Diversity halves (2.52 vs 4.44). The untrained model with the same prompt already does most of this. At ρ = 0.8 it does not help now and leaves communities 5% worse after (p = .005). The gap is not there at the problem-4 checkpoint. Feedback form and KL change how many distinct answers the model gives (pick one of two: fewest), not the community outcome.</p>
+          <p class="verdict">It becomes a copy-the-best assistant: as helpful as the oracle nudge in the moment, and 5–12 points worse for the community once the problem changes.</p>
+          <p class="detail">The LLM sees the community's 3 best current approaches and learns from user feedback (thumbs up/down or pick one of two). Frozen checkpoints on 100 fresh communities per seed, 12 seeds at ρ = 1. Against the oracle nudge on the next problem with the AI removed: pick one of two −11.5, −9.9, −7.9, −7.6 points at the checkpoints after problems 1–4 (all p &lt; .05); thumbs −11.3, −8.3, −2.1, −5.3 (three of four p &lt; .06). Help while assisted stays level with the nudge. The untrained model with the same prompt shows most of the cost (−9.7 after problem 1), so most of it comes from what the assistant is shown; feedback training does not remove it. At ρ = 0.8 it is 24–37 points below the nudge in the moment and 6–14 below it after. Pick one of two collapses onto one answer for everyone; thumbs keeps more variety (+0.73 distinct answers of 8, p &lt; .001) and does a little better later (+2.5, n.s.).</p>
         </div>
       </div>
     </div>
@@ -204,17 +205,12 @@ a { color: var(--accent); }
     <p style="color:var(--ink-2);margin-bottom:14px">Reply in chat with the ID and yes, no, or a change. Details are in <code>docs/DECISIONS.md</code>.</p>
     <div class="calls">
       <article class="call key">
-        <header><span class="id">G-4</span><h3>Firm up the LLM result before writing it up</h3></header>
-        <p class="rec"><b>Recommend.</b> The headline (same help now, −15 points later) rests on one checkpoint, one modularity and 6 seeds, and the problem-4 checkpoint shows no gap. Two cheap steps: evaluate the checkpoints after problems 2 and 3 too (24 inference jobs), to see whether the gap shrinks steadily or jumps; and add 6 more training seeds for two arms (thumbs, pick one of two) at ρ = 1.</p>
-        <p class="cost">Cost: about 25 GPU-hours of inference plus 12 training runs.</p>
-      </article>
-      <article class="call">
-        <header><span class="id">G-5</span><h3>Fix the simulated chooser in pick-one-of-two</h3></header>
-        <p class="rec"><b>Recommend, low priority.</b> When neither answer helps, my simulated user picks at random, even against a malformed answer, which let two runs drift into free text. A real user would pick the well-formed answer. Feedback form did not change community outcomes, so this matters for the collapse numbers, not the main result.</p>
-      </article>
-      <article class="call">
-        <header><span class="id">Framing</span><h3>Three findings that hang together</h3></header>
-        <p class="rec">(1) In a published model of collective search, how much an assistant helps during use does not predict what it leaves behind, and whole copied answers are the cause. (2) A longer reward does not fix it; being able to step back does. (3) An LLM assistant that sees what works for others and learns from user feedback converges to copy-the-best: help at the level of an oracle nudge, but the community it leaves behind adapts worse. User feedback of the kinds used in RLHF (thumbs, pick one of two) does not see this cost.</p>
+        <header><span class="id">G-6</span><h3>Write up, or run one more stage first?</h3></header>
+        <p class="rec"><b>Recommend writing up now.</b> The three findings are stable: the sim dissociation and its cause (robust to network, shift size, K), the P2 result that stepping back matters and reward horizon does not, and the LLM result at 12 seeds. A paper draft would show which gaps reviewers will press on.</p>
+        <ul>
+          <li>Option: one more LLM stage that tests the fix the sims point to. Give the LLM the option to step back <i>and</i> the community context, trained with thumbs: does abstention remove the later cost as it did for the oracle policy in P2? About 24 runs plus evaluation.</li>
+          <li>Option: a larger model (Qwen3.5-9B) on the main arm, to check the result is not specific to a 4B model.</li>
+        </ul>
       </article>
     </div>
   </section>
@@ -256,6 +252,10 @@ a { color: var(--accent); }
     <figure>
       <div class="plate"><img src="figures/p3eval_b_p0.png" alt="Frozen checkpoints after problem 1 from the runs with community context and user feedback: fitness while assisted against next-problem fitness without AI."></div>
       <figcaption><b>(b) Frozen checkpoints, with community context and user feedback.</b> Checkpoints after problem 1, 100 fresh communities per seed, 6 seeds. At ρ = 1 the LLM arms match the oracle nudge on the x axis and fall below it on the y axis.</figcaption>
+    </figure>
+    <figure>
+      <div class="plate"><img src="figures/p3b_gap_over_training.png" alt="Difference from the oracle nudge over four training checkpoints, while assisted and on the next problem without AI, at two modularities."></div>
+      <figcaption><b>The gap to the oracle nudge over continual training.</b> Each checkpoint is run frozen on 100 fresh communities per training seed (12 seeds at ρ = 1, 6 at ρ = 0.8). Difference from the oracle nudge on the same communities, in points of no-AI fitness; 95% CIs over seeds. Pick one of two uses the fixed chooser (G-5).</figcaption>
     </figure>
   </section>
 

@@ -1,0 +1,10 @@
+1 extra bytes in post.stringData array
+'created' timestamp seems very low; regarding as unix timestamp
+Zapf NOT subset; don't know how to subset; dropped
+feat NOT subset; don't know how to subset; dropped
+morx NOT subset; don't know how to subset; dropped
+rho 1 during: thumbs - pick one of two, per checkpoint +1.7(p=0.71) +5.0(p=0.25) +8.4(p=0.13) +12.4(p=0.03) | pooled +6.9 p=0.074 n=12
+rho 1 next_off: thumbs - pick one of two, per checkpoint +0.2(p=0.93) +1.7(p=0.64) +5.8(p=0.04) +2.4(p=0.26) | pooled +2.5 p=0.197 n=12
+rho 0.8 during: thumbs - pick one of two, per checkpoint +5.4(p=0.61) +2.9(p=0.64) +6.5(p=0.38) +3.7(p=0.34) | pooled +4.6 p=0.502 n=6
+rho 0.8 next_off: thumbs - pick one of two, per checkpoint +0.8(p=0.90) +5.7(p=0.05) +0.8(p=0.84) +3.7(p=0.04) | pooled +2.7 p=0.360 n=6
+wrote figures/p3b_gap_over_training

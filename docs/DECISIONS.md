@@ -462,3 +462,27 @@ vs 0.00 for one seed per rho before). It still collapses fully: late share on th
 0.98-1.00, 1.0 distinct of 8. Thumbs keeps more variety than fixed pick-one-of-two with 12 seeds
 at rho = 1: +0.73 distinct of 8 [+0.44, +1.01], p < .001; rho = 0.8 +0.25 n.s. (6 seeds).
 So the degeneration was the chooser artifact; the collapse under pick-one-of-two is real.
+
+### G-4 (ii) result: 12 seeds at rho = 1 (2026-10-16)
+
+Frozen evaluation of every (b) checkpoint, 100 fresh communities per seed. Difference from the
+oracle nudge on the next problem with the AI removed, points of no-AI fitness, t CIs over seeds
+(results/summary/p3b_eval_arms.txt; figure p3b_gap_over_training):
+| checkpoint after | thumbs (12) | pick one of two, fixed chooser (12) | untrained with context (12) |
+|---|---|---|---|
+| problem 1 | -11.3 p = .008 | -11.5 p < .001 | -9.7 p = .001 |
+| problem 2 | -8.3 p = .053 | -9.9 p = .001 | -10.5 p = .001 |
+| problem 3 | -2.1 n.s. | -7.9 p = .043 | -0.7 n.s. |
+| problem 4 | -5.3 p = .031 | -7.6 p = .004 | -6.1 p = .006 |
+While assisted, every arm is level with the nudge (within +-6, mostly n.s.; thumbs +6.3 at
+problem 4, p = .02). rho = 0.8 (6 seeds): 24-37 points below the nudge while assisted and 6-14
+below it on the next problem at every checkpoint.
+Thumbs - pick one of two, paired over 12 seeds at rho = 1: while assisted +6.9 pooled (p = .07;
++12.4 at problem 4, p = .03); next problem +2.5 pooled (n.s.; +5.8 at problem 3, p = .04).
+
+Reading: with 12 seeds the result holds at every checkpoint for pick one of two and at three of
+four for thumbs. An LLM assistant that sees what works for others gives the same immediate help as
+the oracle nudge and leaves people 5-12 points worse placed for the next problem. The untrained
+model with the same prompt shows most of the cost, so most of it comes from what the assistant is
+shown, and feedback training does not remove it. Thumbs is a little better than pick one of two
+(more varied answers, somewhat more help later), not significantly when pooled.
