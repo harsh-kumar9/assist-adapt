@@ -722,3 +722,19 @@ Second screen launched (jobs 421351-421357): least help that works (capped at 2/
 screened: with an oracle that searches its whole range, "no success" means no improvement within reach,
 so the ES rule (shrink the step on failure) points the wrong way; it fits an LLM that proposes, not an
 exhaustive oracle.
+
+### Second screen result (2026-10-24; rho 1, turnover 0.01, shift 0.5, 200 seeds)
+
+Paired with the plain reach-3 greedy assistant (+55% while assisted, +7.3% on the next problem, AI off):
+- Tweak or leap (reach 3, 10% leaps to a helpful module nobody holds): +6.2 [5.5, 6.9] help now, +0.6 n.s.
+  later; at reach 2 vs plain reach 2: +14.7 now, +1.3 later (p = 0.02). Best design so far.
+- Recombination toward a rare donor, up to 5 bits: +3.3 now, +0.3 n.s. later; up to 10 bits vs unbounded
+  greedy: -11.9 now, +5.5 [4.6, 6.4] later.
+- Local competition at reach 5 vs greedy reach 5: -0.6 now, +1.9 [1.3, 2.6] later.
+- Least help that works (capped 3): -7.1 now, -0.9 n.s. later. Not useful.
+- Use rate 0.25 vs 0.75: little change at reach 3; strong and copying assistants narrow more with more use.
+rho 0.8 first screen: searching keeps diversity above no AI everywhere; preferring random helpful is weakest;
+copying stays at or below no AI and gives at most +3.8% later.
+Reading: mostly small changes plus a few targeted jumps (Miu et al. 2018's tweaks and leaps) dominate. For
+the LLM this suggests edits of at most 3 choices plus occasional full answers rewarded only when helpful and
+new to the culture. Page updated (version 2).
