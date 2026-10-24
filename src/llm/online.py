@@ -77,6 +77,25 @@ def parse(text, M=10):
     return sum(int(ch) << j for j, ch in enumerate(m.group(0)))
 
 
+def chat_text(tok, user):
+    """Chat-formatted prompt. Templates that already start with BOS (Gemma) have it removed, because
+    the tokenizer adds it again when the text is encoded; Qwen templates have no BOS, so no change."""
+    msgs = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}]
+    text = tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+    if tok.bos_token and text.startswith(tok.bos_token):
+        text = text[len(tok.bos_token):]
+    return text
+
+
+def lora_targets(model_type):
+    """LoRA on the language model's attention and MLP projections. Gemma 3 4B ships as a vision-language
+    model, so its vision tower (which also has q/k/v projections) is excluded."""
+    names = "q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj"
+    if model_type == "gemma3":
+        return rf".*language_model.*\.({names})"
+    return names.split("|")
+
+
 def popcount(x):
     return bin(int(x)).count("1")
 
@@ -95,17 +114,17 @@ class LLM:
             self.tok.pad_token = self.tok.eos_token
         base = AutoModelForCausalLM.from_pretrained(args.model, dtype=torch.bfloat16).to(args.device)
         cfg = LoraConfig(r=args.lora_r, lora_alpha=2 * args.lora_r, lora_dropout=0.0,
-                         target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                                         "gate_proj", "up_proj", "down_proj"])
+                         target_modules=lora_targets(base.config.model_type))
         base.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
         base.config.use_cache = False
+        if hasattr(base.config, "text_config"):
+            base.config.text_config.use_cache = False
         self.model = get_peft_model(base, cfg)
         self.opt = torch.optim.AdamW([p for p in self.model.parameters() if p.requires_grad],
                                      lr=args.lr, weight_decay=0.0)
 
     def chat(self, user):
-        msgs = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}]
-        return self.tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+        return chat_text(self.tok, user)
 
     def sample(self, users, G, seed):
         torch = self.torch

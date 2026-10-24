@@ -486,3 +486,20 @@ the oracle nudge and leaves people 5-12 points worse placed for the next problem
 model with the same prompt shows most of the cost, so most of it comes from what the assistant is
 shown, and feedback training does not remove it. Thumbs is a little better than pick one of two
 (more varied answers, somewhat more help later), not significantly when pooled.
+
+## G-6: write-up, and a second model family (Harsh, 2026-10-24)
+
+Harsh: "go ahead do the writing but instead of reproducing in a bigger model of same family, we
+should try different family. I think gemma3-4b is also in cache, we can reproduce. the writeup should
+be easy to understand following the writing style of the original reference paper".
+
+Gemma reproduction: google/gemma-3-4b-it (cached), same design as the 12-seed Qwen result: rho = 1,
+context 3, thumbs and pick one of two with the fixed chooser, 12 seeds each (results/p3g), then the
+frozen evaluation of all four checkpoints on 100 fresh communities per seed with untrained Gemma and
+the oracles. Code changes, no-ops for Qwen: Gemma 3 4B loads as a vision-language model, so LoRA
+targets only the language model's projections (regex), the duplicated BOS from Gemma's chat template is
+removed before tokenizing, and vLLM runs with images disabled. GPU smoke (job 420471): training and
+the frozen evaluation both run; Gemma's first answers improve 47-79% of askers and by round 3, 81% of
+askers get the same answer.
+Write-up: LaTeX in paper/ (Overleaf-ready; no TeX compiler on the Mac or ada), with a readable PDF
+preview rendered from the same source.

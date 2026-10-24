@@ -20,7 +20,7 @@ import time
 
 import numpy as np
 
-from src.llm.online import P_SOCIAL, SYSTEM, parse, popcount, render, top_context
+from src.llm.online import P_SOCIAL, SYSTEM, chat_text, parse, popcount, render, top_context
 from src.nk import Landscape
 from src.sim import Community, mean_pairwise_hamming, propose
 
@@ -67,9 +67,7 @@ class LLMAssistant:
         for bi, (codes, fit, F, idx, u, prop) in enumerate(batch):
             ctx = top_context(codes, fit, self.context) if self.context else None
             for i in idx:
-                msgs = [{"role": "system", "content": SYSTEM},
-                        {"role": "user", "content": render(codes[i], step_back=self.step_back, context=ctx)}]
-                prompts.append(self.tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True))
+                prompts.append(chat_text(self.tok, render(codes[i], step_back=self.step_back, context=ctx)))
                 owners.append(bi)
         if not prompts:
             return [np.zeros(0, np.int64) for _ in batch], {}
@@ -190,8 +188,10 @@ def main():
         from transformers import AutoTokenizer
         from vllm import LLM
         tok = AutoTokenizer.from_pretrained(args.model)
+        extra = dict(limit_mm_per_prompt={"image": 0}) if "gemma" in args.model.lower() else {}
         engine = LLM(model=args.model, enable_lora=True, max_lora_rank=16, max_loras=1, dtype="bfloat16",
-                     gpu_memory_utilization=0.85, max_model_len=512, enable_prefix_caching=True, seed=args.seed)
+                     gpu_memory_utilization=0.85, max_model_len=768, enable_prefix_caching=True, seed=args.seed,
+                     **extra)
     t0 = time.time()
     for k in [int(x) for x in str(args.problem).split(",")]:
         adapter = f"adapter_p{k}" if args.adapter == "auto" else args.adapter
