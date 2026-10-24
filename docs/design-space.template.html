@@ -1,0 +1,369 @@
+<title>Assistant Design Space</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column; wide tables scroll inside their own frames. Same tokens as the project's decision board. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #15191f;
+  --ink-2: #47505b;
+  --muted: #6f7883;
+  --line: #dce1e6;
+  --accent: #1f6fd1;
+  --accent-soft: #e4edf9;
+  --warm: #b4471b;
+  --warm-soft: #fbebe2;
+  --good: #16793b;
+  --good-soft: #e2f2e7;
+  --wait: #855700;
+  --wait-soft: #faefd6;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1318; --surface: #171c23; --ink: #e6eaef; --ink-2: #b4bcc6; --muted: #8a939e; --line: #2a313a;
+    --accent: #6aa5f0; --accent-soft: #1a2a40; --warm: #f08a5d; --warm-soft: #3a2218; --good: #5cc282;
+    --good-soft: #15301f; --wait: #e2b34c; --wait-soft: #33290f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1318; --surface: #171c23; --ink: #e6eaef; --ink-2: #b4bcc6; --muted: #8a939e; --line: #2a313a;
+  --accent: #6aa5f0; --accent-soft: #1a2a40; --warm: #f08a5d; --warm-soft: #3a2218; --good: #5cc282;
+  --good-soft: #15301f; --wait: #e2b34c; --wait-soft: #33290f; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 940px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: grid; gap: 10px; margin-bottom: 28px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; color: var(--muted); }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: 34px; }
+h2 { font-size: 23px; margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line); }
+h3 { font-size: 17px; margin-top: 26px; color: var(--ink-2); }
+p, li { max-width: 68ch; }
+p { margin: 10px 0; }
+.lede { font-size: 17px; color: var(--ink-2); }
+.answer { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); padding: 14px 18px; margin: 18px 0; }
+.answer ul { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.frame { overflow-x: auto; margin: 12px 0; border: 1px solid var(--line); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--display); font-weight: 600; font-size: 13px; color: var(--ink-2); background: var(--bg); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .refs { color: var(--muted); font-size: 12.5px; }
+code, .mono { font-family: var(--mono); font-size: 12.5px; }
+.chip { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 10px; white-space: nowrap; }
+.chip.llm { background: var(--accent-soft); color: var(--accent); }
+.chip.oracle { background: var(--good-soft); color: var(--good); }
+.chip.run { background: var(--wait-soft); color: var(--wait); }
+.chip.idea { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.chip.no { background: var(--warm-soft); color: var(--warm); }
+.texd { display: block; margin: 10px 0; overflow-x: auto; }
+figure { margin: 16px 0; }
+figure img { display: block; width: 100%; max-width: 100%; background: #fff; border: 1px solid var(--line); }
+figcaption { font-size: 13px; color: var(--ink-2); margin-top: 6px; max-width: 80ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; color: var(--ink-2); margin: 8px 0; }
+ol.refs-list { padding-left: 20px; font-size: 13.5px; display: grid; gap: 4px; }
+ol.refs-list li { max-width: none; }
+a { color: var(--accent); }
+.small { font-size: 13px; color: var(--muted); }
+@media (max-width: 520px) { h1 { font-size: 27px; } body { font-size: 14.5px; } }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">assist-adapt · D-016 · 24 Oct 2026</div>
+  <h1>Assistant design space</h1>
+  <p class="lede">An AI assistant helps a research culture, collects its users' feedback, and is retrained once per epoch. Which rewards and which ways of helping let it help now without leaving the culture less able to adapt later?</p>
+</header>
+
+<div class="answer">
+  <strong>Where we are</strong>
+  <ul>
+    <li>Retrained on thumbs up, the LLM narrows the culture as much as an assistant that hands every team the best approach already in use. Novelty rewards (P- and H-creativity) and an edit-bounded reward change nothing: the model never proposes helpful answers that are new.</li>
+    <li>Even a perfect learner of the novelty rewards keeps the culture only a little more diverse than one that picks any helpful answer (1.9 vs 1.6 for the greedy helper). Reach, the share of a team's approach the assistant replaces, moves it much more (2.8 at 3 of 10 bits).</li>
+    <li>Whether strong help narrows the culture depends on the problem. When one module is best for every team (ρ = 1), any assistant that searches far narrows it; when the best module depends on each team's other choices (ρ = 0.8), searching help keeps the culture more diverse than no AI. Copying from the culture narrows it in both.</li>
+    <li>Narrowing costs something once the problem changes enough. With half the payoffs redrawn, the copying assistant leaves the culture no better than no AI on the next problem; small-reach help leaves it 7% better.</li>
+    <li>Screening 36 perfect-learner designs: assistants that copy from the culture are the worst trade at every reach; small reach gives the best later fitness; preferring rare answers (fitness sharing) adds about 3 points later, but only when reach is large. Separate assistants per group did nothing as set up here.</li>
+  </ul>
+</div>
+
+<h2>Notation</h2>
+<p>Team <span class="tex">i</span> holds approach <span class="tex">x_i=(m_i,r_i)\in\{0,1\}^{20}</span>. The assistant can change only the module <span class="tex">m_i</span> (10 bits). <span class="tex">F(x)\in[0,1]</span> is the NK payoff. An answer is a module <span class="tex">a</span>, or nothing.</p>
+<span class="texd">g(a)=10\,\max\{0,\;F(a,r_i)-F(x_i)\},\qquad h(a)=\mathbb{1}[g(a)>0],\qquad d(\cdot,\cdot)=\text{Hamming distance}</span>
+<p><span class="tex">C_t</span> is the set of modules held in the culture at round <span class="tex">t</span>, <span class="tex">n(c)</span> the number of teams holding <span class="tex">c</span>, and <span class="tex">H_i=\{a: F(a,r_i)&gt;F(x_i)\}</span> the answers that would help team <span class="tex">i</span>. A team adopts an answer only if it helps.</p>
+
+<h2>Rewards we have</h2>
+<h3>P2: which kind of help, fitted by evolution strategy</h3>
+<p>The policy picks a full answer, a one-bit nudge, or stepping back. Rewards over an episode of <span class="tex">T=30</span> assisted rounds, with <span class="tex">\bar F_t</span> the community's mean fitness:</p>
+<span class="texd">R_{\text{now}}=\tfrac1T\textstyle\sum_{t\le T}\bar F_t,\qquad R_{\text{long}}=R_{\text{now}}+\tfrac1{30}\sum_{t=T+1}^{T+30}\bar F_t,\qquad R_{\text{adapt}}=R_{\text{now}}+\tfrac1{30}\sum_{t=T+1}^{T+30}\bar F'_t</span>
+<p class="small"><span class="tex">R_{\text{long}}</span>: same problem, assistant on. <span class="tex">R_{\text{adapt}}</span>: problem shifted, assistant off. All three learned the same policy.</p>
+
+<h3>P3 and P4b: rewards for training the LLM</h3>
+<div class="frame"><table>
+<tr><th>Name</th><th>Reward for answer <span class="tex">a</span> to team <span class="tex">i</span></th><th>Reading</th><th>Used</th></tr>
+<tr><td><span class="tex">R_{\text{now}}</span></td><td><span class="tex">g(a)</span>; an invalid answer gets <span class="tex">-0.1</span></td><td>how much it helped</td><td>P3, every round</td></tr>
+<tr><td>nudge prior</td><td><span class="tex">g(a)\,(1-0.8\,d(a,m_i)/10)</span></td><td>help, discounted by how much it rewrites</td><td>P3, written, not run</td></tr>
+<tr><td>step back</td><td>if <span class="tex">a=m_i</span>: the gain the team gets exploring on its own</td><td>abstain when nothing helps</td><td>P3</td></tr>
+<tr><td>thumbs</td><td><span class="tex">h(a)</span></td><td>did it help me</td><td>P3, P4b</td></tr>
+<tr><td>pick one of two</td><td>samples paired; <span class="tex">1</span> for the one with larger <span class="tex">g</span>, <span class="tex">0</span> for the other, ties at random (or to the valid one)</td><td>preference between two answers</td><td>P3</td></tr>
+<tr><td>P-creativity</td><td><span class="tex">h(a)\,\bigl(1+\lambda\,d(a,m_i)/10\bigr)</span>, <span class="tex">\lambda=1</span></td><td>helpful and new to me</td><td>P4b</td></tr>
+<tr><td>H-creativity</td><td><span class="tex">h(a)\,\bigl(1+\lambda\min_{c\in C_t}d(a,c)/10\bigr)</span>, <span class="tex">\lambda=1</span></td><td>helpful and new to the culture</td><td>P4b</td></tr>
+<tr><td>local</td><td><span class="tex">h(a)\,\mathbb{1}[d(a,m_i)\le 3]</span></td><td>helpful without replacing my approach</td><td>P4b</td></tr>
+</table></div>
+
+<h3>The update</h3>
+<p>Each request gets <span class="tex">G=8</span> samples. Advantages are relative to the group; the loss adds a KL penalty to the untrained model in the "+ KL" arms (<span class="tex">\beta=0.05</span>, otherwise 0).</p>
+<span class="texd">A_{ij}=\frac{R_{ij}-\operatorname{mean}_j R_{ij}}{\operatorname{std}_j R_{ij}+10^{-4}},\qquad \mathcal L(\theta)=-\frac1{n_{\text{tok}}}\sum_{i,j,t}\Bigl[A_{ij}\log\pi_\theta(y_{ijt}\mid\cdot)-\beta\,(e^{\Delta_{ijt}}-\Delta_{ijt}-1)\Bigr],\quad \Delta=\log\pi_{\text{ref}}-\log\pi_\theta</span>
+<p>If the 8 samples get the same reward, the request teaches nothing. That is the failure we kept hitting: the trained model gives nearly the same answer every time, so there is little left to compare.</p>
+
+<h3>Oracle assistants (not learned)</h3>
+<p>These show what a perfect learner of each reward would do. Those that search step back when nothing within their range helps.</p>
+<div class="frame"><table>
+<tr><th>Name</th><th>Answer</th><th>Ideal of</th></tr>
+<tr><td>PCC</td><td><span class="tex">\arg\max_{a\in C_t}F(a,r_i)</span></td><td>copy the best approach in use</td></tr>
+<tr><td>SBP</td><td><span class="tex">\arg\max_{a:\,d(a,m_i)=1}F(a,r_i)</span></td><td>best single change</td></tr>
+<tr><td>reach <span class="tex">k</span></td><td><span class="tex">\arg\max_{a\in H_i,\;d(a,m_i)\le k}F(a,r_i)</span></td><td>local reward / edit interface</td></tr>
+<tr><td>any helpful</td><td>uniform over <span class="tex">H_i</span></td><td>thumbs</td></tr>
+<tr><td>farthest from me</td><td><span class="tex">\arg\max_{a\in H_i}d(a,m_i)</span></td><td>P-creativity</td></tr>
+<tr><td>farthest from the culture</td><td><span class="tex">\arg\max_{a\in H_i}\min_{c\in C_t}d(a,c)</span></td><td>H-creativity</td></tr>
+<tr><td>rarest</td><td><span class="tex">\arg\min_{a\in H_i}n(a)</span>, ties to larger gain</td><td>fitness sharing</td></tr>
+<tr><td>gated</td><td>full answer or nudge, whichever gains more, if either helps; else step back</td><td>P2's learned rule</td></tr>
+</table></div>
+
+<h2>What the runs show</h2>
+<p>Culture: 100 teams, 1% leave per round and are replaced by newcomers with random approaches, the problem changes every 60 rounds. Diversity is mean pairwise Hamming distance at the end of each epoch.</p>
+<h3>The LLM, retrained once per epoch (6 seeds, problem shift 20%)</h3>
+<div class="frame"><table>
+<tr><th>Reward</th><th class="num">Culture diversity</th><th class="num">vs never updated</th><th class="num">p</th></tr>
+<tr><td>No AI</td><td class="num">2.69</td><td></td><td></td></tr>
+<tr><td>LLM, never updated</td><td class="num">1.91</td><td></td><td></td></tr>
+<tr><td>thumbs</td><td class="num">1.61</td><td class="num">−0.30</td><td class="num">0.002</td></tr>
+<tr><td>thumbs + KL</td><td class="num">1.63</td><td class="num">−0.28</td><td class="num">0.002</td></tr>
+<tr><td>P-creativity</td><td class="num">1.76</td><td class="num">−0.15</td><td class="num">0.14</td></tr>
+<tr><td>H-creativity</td><td class="num">1.62</td><td class="num">−0.29</td><td class="num">0.004</td></tr>
+<tr><td>thumbs, explore</td><td class="num">1.65</td><td class="num">−0.26</td><td class="num">0.008</td></tr>
+<tr><td>P-creativity, explore</td><td class="num">1.62</td><td class="num">−0.29</td><td class="num">0.002</td></tr>
+<tr><td>H-creativity, explore</td><td class="num">1.68</td><td class="num">−0.23</td><td class="num">0.05</td></tr>
+<tr><td>local (≤ 3 bits), explore</td><td class="num">1.63</td><td class="num">−0.29</td><td class="num">0.004</td></tr>
+</table></div>
+<p>"Explore" draws the update samples at temperature 2. No reward differs from thumbs at the same temperature. Asked the same questions, every trained model gives nearly one answer to everyone, and none of its helpful answers is new to the culture.</p>
+
+<h3>Perfect learners: reach, not preference</h3>
+<div class="frame"><table>
+<tr><th>Oracle (200 seeds)</th><th class="num">Diversity</th><th class="num">Help while assisted</th><th class="num">Next problem, AI off</th></tr>
+<tr><td>No AI</td><td class="num">2.56</td><td class="num">0</td><td class="num">0</td></tr>
+<tr><td>reach 1 (SBP)</td><td class="num">2.72</td><td class="num">+9.5%</td><td class="num">+7.2%</td></tr>
+<tr><td>reach 2</td><td class="num">2.74</td><td class="num">+35%</td><td class="num">+21%</td></tr>
+<tr><td>reach 3</td><td class="num">2.53</td><td class="num">+52%</td><td class="num">+30%</td></tr>
+<tr><td>reach 5</td><td class="num">1.90</td><td class="num">+66%</td><td class="num">+34%</td></tr>
+<tr><td>reach 10</td><td class="num">1.58</td><td class="num">+69%</td><td class="num">+34%</td></tr>
+<tr><td>copy best in use (PCC)</td><td class="num">1.62</td><td class="num">+23%</td><td class="num">+13%</td></tr>
+<tr><td>ideal thumbs / P- / H-creativity</td><td class="num">1.95 / 1.88 / 1.94</td><td class="num">+58 / +61 / +62%</td><td class="num">+29 / +31 / +32%</td></tr>
+</table></div>
+<p>A team adopts an answer only if it improves, so repeated strong help takes each team to its own best module, whatever the reward prefers along the way. Problem shift 20%, ρ = 1.</p>
+
+<h3>When does narrowing cost something?</h3>
+<figure>
+  <img alt="Two rows of panels: culture diversity (top) and fitness on the next problem with the AI removed at round 30 (bottom), against reach, for problem shifts of 20%, 50% and 100%, at ρ = 1 and 0.8 with and without turnover." src="{{IMG:figures/p4a_cost.png}}">
+  <figcaption>Oracles across problem shift (shades), ρ and turnover. Bottom row: fitness 30 rounds into the next problem with the assistant removed, % vs no AI on the same seeds. At 20% shift what raised fitness carries over; at 100% nothing carries over; at 50% the narrowing assistants lose their advantage.</figcaption>
+</figure>
+<div class="frame"><table>
+<tr><th>Shift 50%, ρ = 1, turnover 1%</th><th class="num">Diversity</th><th class="num">Help while assisted</th><th class="num">Next problem, AI off, round 30</th></tr>
+<tr><td>No AI</td><td class="num">2.82</td><td class="num">0</td><td class="num">0</td></tr>
+<tr><td>reach 1 (SBP)</td><td class="num">3.04</td><td class="num">+10.5%</td><td class="num">+3.7%</td></tr>
+<tr><td>reach 3</td><td class="num">2.80</td><td class="num">+55%</td><td class="num">+7.3%</td></tr>
+<tr><td>reach 10</td><td class="num">1.77</td><td class="num">+73%</td><td class="num">+1.9%</td></tr>
+<tr><td>copy best in use (PCC)</td><td class="num">1.81</td><td class="num">+20%</td><td class="num">−1.0%</td></tr>
+</table></div>
+<p>At ρ = 0.8 the picture changes. The best module then depends on each team's other choices, so a searching assistant sends teams to different places: diversity rises with reach (3.16 at reach 1, 3.33 at reach 10, no AI 2.79) and so does later fitness (+3.8% to +9.6% at 50% shift). Copying still narrows the culture (2.76) and leaves it only +3.5% better. Copying is the bad choice in both cases; reach matters when everyone's best answer is the same.</p>
+<p>Paired by seed at ρ = 1: reach 3 beats reach 10 by 5.4 points [4.3, 6.5] and PCC by 8.3 [6.9, 9.8] on the next problem, although reach 10 helped more while it was there. ρ = 1 and 50% shift is the setting for the rest of the screening and for the LLM runs now going, because it is where both choices matter.</p>
+
+<h2>Screening the design space with perfect learners</h2>
+<p>Before giving a design to the LLM, we check what a perfect learner of it would do. If the ideal does not help, a model trained toward it will not either; that is what happened with the novelty rewards. The first screen crosses three choices: where answers come from (any module, or only modules some team holds), which helpful answer is preferred (largest gain, any, or rarest), and reach (1 to 10 bits), plus 4 or 10 separate assistants. 200 seeds each, ρ = 1, turnover 1%.</p>
+<figure>
+  <img alt="Four panels against reach: culture diversity, fitness while assisted, and fitness on the next problem with the AI removed, for three preferences and two answer sources; the fourth panel plots fitness while assisted against diversity for every design." src="{{IMG:figures/p4a_grid_shift0.5.png}}">
+  <figcaption>Problem shift 50%. Solid lines and circles: answers from any module; dotted lines and squares: only modules some team holds (copying). Colour is the preference among helpful answers. (d) every design; marker size grows with reach, open markers are 4 or 10 separate assistants. Dashed lines: no AI.</figcaption>
+</figure>
+<div class="frame"><table>
+<tr><th>Shift 50%</th><th class="num">Diversity</th><th class="num">Help while assisted</th><th class="num">Next problem, AI off, round 30</th></tr>
+<tr><td>No AI</td><td class="num">2.82</td><td class="num">0</td><td class="num">0</td></tr>
+<tr><td>Any module, reach 3, largest gain</td><td class="num">2.80</td><td class="num">+55%</td><td class="num">+7.3%</td></tr>
+<tr><td>Any module, reach 3, rarest</td><td class="num">2.74</td><td class="num">+54%</td><td class="num">+7.8%</td></tr>
+<tr><td>Any module, reach 5, largest gain</td><td class="num">2.11</td><td class="num">+70%</td><td class="num">+3.9%</td></tr>
+<tr><td>Any module, reach 5, rarest</td><td class="num">2.31</td><td class="num">+67%</td><td class="num">+6.8%</td></tr>
+<tr><td>Any module, reach 10, largest gain</td><td class="num">1.77</td><td class="num">+73%</td><td class="num">+1.9%</td></tr>
+<tr><td>Any module, reach 10, rarest</td><td class="num">1.99</td><td class="num">+71%</td><td class="num">+4.8%</td></tr>
+<tr><td>Copy from the culture, reach 3, rarest</td><td class="num">2.83</td><td class="num">+16%</td><td class="num">+2.6%</td></tr>
+<tr><td>Copy from the culture, reach 10, largest gain (PCC)</td><td class="num">1.84</td><td class="num">+24%</td><td class="num">−0.8%</td></tr>
+<tr><td>Same, 4 separate assistants</td><td class="num">1.88</td><td class="num">+24%</td><td class="num">−0.3%</td></tr>
+</table></div>
+<ul>
+<li><strong>Source.</strong> Copying from the culture is the worst trade at every reach: it redistributes what teams already hold, so it helps less now (+3 to +26%) and leaves the culture no better later. The trained LLM sits here.</li>
+<li><strong>Reach.</strong> Diversity falls as reach grows for every source and preference. Later fitness peaks at reach 2 to 3.</li>
+<li><strong>Preference.</strong> Preferring the rarest helpful answer (fitness sharing, negative frequency dependence) beats preferring the largest gain by 2.9 points later at reach 5 and at reach 10 (both p &lt; 10<sup>−11</sup>), for about 3 points less help now. At reach 2 to 3 the preference does not matter (+0.6, n.s.). Picking any helpful answer at random gives less help without more diversity at small reach.</li>
+<li><strong>Separate assistants.</strong> Splitting the culture among 4 or 10 copying assistants did nothing. Here the groups are scattered across one random network, so teams still copy neighbours in other groups. A fair test needs groups that match the network's clusters.</li>
+<li>At 20% shift the same ordering holds for diversity, but later fitness is driven by carry-over and rarity does not help (reach 10: +0.7, p = 0.09).</li>
+</ul>
+
+<h2>The design space</h2>
+<p>Five choices make up an assistant. For each option: the rule, where the idea comes from, and how far we have taken it.</p>
+<div class="legend">
+  <span><span class="chip llm">LLM</span> trained and measured</span>
+  <span><span class="chip run">running</span> LLM runs going</span>
+  <span><span class="chip oracle">oracle</span> screened with perfect learners</span>
+  <span><span class="chip idea">proposed</span> not yet run</span>
+</div>
+
+<h3>1. What the assistant returns</h3>
+<div class="frame"><table>
+<tr><th>Option</th><th>Rule</th><th>Grounding</th><th>Status</th></tr>
+<tr><td>Full answer</td><td>any <span class="tex">a\in\{0,1\}^{10}</span></td><td>Copying is social learning; it raises the mean only while others still search <span class="refs">(Rogers 1988; Laland 2004)</span></td><td><span class="chip llm">LLM</span></td></tr>
+<tr><td>Bounded edit</td><td><span class="tex">a=m_i\oplus e,\ |e|\le k</span>: the model names which choices to flip</td><td>Small steps are more often beneficial <span class="refs">(Fisher 1930; Orr 1998)</span>; local search keeps firms in distinct niches <span class="refs">(Levinthal 1997)</span>; give the least help that unblocks the learner <span class="refs">(Wood, Bruner &amp; Ross 1976; Koedinger &amp; Aleven 2007)</span></td><td><span class="chip oracle">oracle</span> <span class="chip run">running</span></td></tr>
+<tr><td>Least help that works</td><td><span class="tex">\arg\min_{a\in H_i} d(a,m_i)</span>, capped at <span class="tex">r_{\max}</span></td><td>Assistance dilemma; productive failure <span class="refs">(Koedinger &amp; Aleven 2007; Kapur 2008)</span></td><td><span class="chip oracle">oracle</span> uncapped</td></tr>
+<tr><td>Adaptive reach</td><td><span class="tex">r_i\leftarrow\operatorname{clip}\bigl(r_i\,e^{(s_i-0.2)/0.8},1,r_{\max}\bigr)</span>, <span class="tex">s_i</span> = recent share of answers that helped team <span class="tex">i</span></td><td>Step-size control in evolution strategies, the 1/5 success rule <span class="refs">(Beyer &amp; Schwefel 2002; Hansen &amp; Ostermeier 2001)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Tweak or leap</td><td>with prob. <span class="tex">1-q</span> an edit of <span class="tex">m_i</span> within <span class="tex">r</span>; with prob. <span class="tex">q</span> a helpful answer new to the culture</td><td>Programming contests improved through many tweaks and rare leaps <span class="refs">(Miu, Gulley, Laland &amp; Rendell 2018)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Menu of options</td><td><span class="tex">K</span> answers chosen for gain and mutual distance (MMR); the team adopts the one best for it</td><td>A single public signal starts cascades <span class="refs">(Banerjee 1992; Bikhchandani, Hirshleifer &amp; Welch 1992)</span>; diversified lists <span class="refs">(Carbonell &amp; Goldstein 1998; Ziegler et al. 2005)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Recombination</td><td><span class="tex">m_i</span> with a block of <span class="tex">b\le r</span> bits from a donor <span class="tex">c</span>, donor drawn <span class="tex">\propto 1/n(c)</span></td><td>High-impact work is mostly conventional with a few atypical combinations <span class="refs">(Uzzi et al. 2013; Fleming 2001; Weitzman 1998)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Step back</td><td>no answer; the team explores on its own</td><td>Learn socially, and search yourself when that fails <span class="refs">(Enquist, Eriksson &amp; Ghirlanda 2007)</span>; producers and scroungers <span class="refs">(Barnard &amp; Sibly 1981)</span></td><td><span class="chip llm">LLM</span> P3 <span class="chip oracle">oracle</span></td></tr>
+</table></div>
+
+<h3>2. Where answers come from</h3>
+<div class="frame"><table>
+<tr><th>Option</th><th>Rule</th><th>Grounding</th><th>Status</th></tr>
+<tr><td>Anywhere</td><td>search all <span class="tex">2^{10}</span> modules</td><td>Individual learning</td><td><span class="chip oracle">oracle</span></td></tr>
+<tr><td>The culture</td><td><span class="tex">a\in C_t</span>; the LLM with the top approaches in its prompt behaves like this</td><td>Payoff-biased and conformist transmission <span class="refs">(Boyd &amp; Richerson 1985)</span>; social influence undoes the wisdom of crowds <span class="refs">(Lorenz et al. 2011)</span></td><td><span class="chip llm">LLM</span> <span class="chip oracle">oracle</span></td></tr>
+<tr><td>Rare parts of the culture</td><td>prefer <span class="tex">c</span> with small <span class="tex">n(c)</span></td><td>Negative frequency-dependent selection keeps rare types <span class="refs">(Ayala &amp; Campbell 1974)</span></td><td><span class="chip oracle">oracle</span></td></tr>
+<tr><td>Approaches the culture lost</td><td>candidates held in past epochs, not now; offered after a shift</td><td>Storage effect and insurance <span class="refs">(Chesson 2000; Yachi &amp; Loreau 1999)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>What the prompt shows</td><td>top <span class="tex">k</span> (now), a random sample, the team's neighbours, or rare approaches</td><td>Network structure sets the speed of convergence <span class="refs">(Lazer &amp; Friedman 2007; Zollman 2007, 2010)</span></td><td><span class="chip idea">proposed</span></td></tr>
+</table></div>
+
+<h3>3. How it is rewarded when retrained</h3>
+<div class="frame"><table>
+<tr><th>Option</th><th>Reward</th><th>Grounding</th><th>Status</th></tr>
+<tr><td>Thumbs, gain, pick one of two, + KL</td><td>see above</td><td>RLHF narrows output diversity <span class="refs">(Kirk et al. 2024; Padmakumar &amp; He 2024)</span></td><td><span class="chip llm">LLM</span></td></tr>
+<tr><td>P- and H-creativity</td><td>see above</td><td><span class="refs">Boden 1990; novelty search (Lehman &amp; Stanley 2011)</span></td><td><span class="chip llm">LLM</span> <span class="chip no">no effect</span></td></tr>
+<tr><td>Local</td><td><span class="tex">h\,\mathbb 1[d(a,m_i)\le k]</span></td><td>as bounded edit</td><td><span class="chip llm">LLM</span> <span class="chip no">no effect</span></td></tr>
+<tr><td>Edit cost</td><td><span class="tex">h\,g-\kappa\,d(a,m_i)</span></td><td>Assistance dilemma <span class="refs">(Koedinger &amp; Aleven 2007)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Fitness sharing</td><td><span class="tex">\dfrac{h\,g}{1+\sum_{c\in C}n(c)\max\{0,1-d(x_i',c)/\sigma\}}</span>; over the team's neighbours only in the local version</td><td>Sharing in genetic algorithms <span class="refs">(Goldberg &amp; Richardson 1987)</span>; seedlings die near adults of their kind <span class="refs">(Janzen 1970)</span>; kill-the-winner <span class="refs">(Thingstad 2000)</span></td><td><span class="chip oracle">oracle</span> ideal</td></tr>
+<tr><td>Local competition</td><td><span class="tex">h\cdot\mathbb 1\bigl[F(x_i')&gt;\max_{c\in C\cap B(x_i',\rho)}F(c)\bigr]</span></td><td>Quality-diversity <span class="refs">(Lehman &amp; Stanley 2011; Mouret &amp; Clune 2015; Pugh, Soros &amp; Stanley 2016)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Count bonus over history</td><td><span class="tex">h\,g+\beta\,h/\sqrt{1+N_{\text{past}}(x_i')}</span></td><td>Count-based exploration <span class="refs">(Bellemare et al. 2016; Song, Kempe &amp; Munos 2025)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Set-level, per epoch</td><td><span class="tex">R_i=h_ig_i/(1+m_i)</span>, <span class="tex">m_i</span> = other askers this epoch who ended within <span class="tex">\delta</span> of <span class="tex">x_i'</span></td><td>Rewarding a set of generations, not one <span class="refs">(Li et al. 2025; Hamid et al. 2025; Walder &amp; Karkhanis 2025)</span>. Needs groups across askers, not per prompt</td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Allocation target</td><td><span class="tex">R_{\text{epoch}}=\sum_i h_ig_i-\lambda\,\mathrm{KL}(\hat p\,\|\,p^*)</span>, <span class="tex">\hat p</span> = share of teams per basin</td><td>Division of cognitive labour <span class="refs">(Kitcher 1990; Weisberg &amp; Muldoon 2009; Alexander, Himmelreich &amp; Thompson 2015)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Bet hedging</td><td><span class="tex">R_{\text{epoch}}=\tfrac1S\sum_s\log\max_{c\in C_{\text{end}}}\tilde F_s(c)</span> over <span class="tex">S</span> simulated shifts</td><td>Geometric-mean fitness under change <span class="refs">(Philippi &amp; Seger 1989; Yachi &amp; Loreau 1999)</span>; but new knowledge goes stale too <span class="refs">(Posen &amp; Levinthal 2012)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Delayed</td><td><span class="tex">R_{\text{adapt}}</span></td><td>—</td><td>P2: same policy as <span class="tex">R_{\text{now}}</span></td></tr>
+</table></div>
+
+<h3>4. How many assistants, learning from whom</h3>
+<div class="frame"><table>
+<tr><th>Option</th><th>Rule</th><th>Grounding</th><th>Status</th></tr>
+<tr><td>One shared assistant</td><td>trained on everyone's feedback</td><td>Algorithmic monoculture <span class="refs">(Kleinberg &amp; Raghavan 2021; Bommasani et al. 2022)</span>; recommender feedback loops homogenise <span class="refs">(Chaney, Stewart &amp; Engelhardt 2018)</span>; AI raises individual output but narrows what a field produces <span class="refs">(Doshi &amp; Hauser 2024; Meincke, Nave &amp; Terwiesch 2025; Hao et al. 2026)</span></td><td><span class="chip llm">LLM</span></td></tr>
+<tr><td><span class="tex">q</span> assistants with migration</td><td>assistant <span class="tex">k</span> serves and learns from group <span class="tex">k</span>, plus a share <span class="tex">\mu</span> of other groups' data every few epochs (each company its own model)</td><td>Shifting balance <span class="refs">(Wright 1932)</span>; island models <span class="refs">(Whitley, Rana &amp; Heckendorn 1997)</span>; semi-isolated subgroups <span class="refs">(Fang, Lee &amp; Schilling 2010)</span>; divide, then reintegrate <span class="refs">(Siggelkow &amp; Levinthal 2003)</span>; partial connectivity <span class="refs">(Derex &amp; Boyd 2016)</span></td><td><span class="chip oracle">oracle</span> copying only</td></tr>
+</table></div>
+
+<h3>5. When and how it learns</h3>
+<div class="frame"><table>
+<tr><th>Option</th><th>Rule</th><th>Grounding</th><th>Status</th></tr>
+<tr><td>Never, every round, every epoch</td><td>—</td><td>—</td><td><span class="chip llm">LLM</span></td></tr>
+<tr><td>How fast each side learns</td><td>the assistant learns from the teams it helped (retraining); the teams learn from the assistant (use rate × reach)</td><td>The organisational code and its members learn from each other; fast socialisation ends exploration and lowers what the organisation knows in the long run, and some turnover helps <span class="refs">(March 1991)</span>. The per-epoch assistant is the code.</td><td><span class="chip oracle">oracle</span> reach; use rate <span class="chip idea">proposed</span></td></tr>
+<tr><td>Recommend exploration to a few</td><td>each epoch send a share <span class="tex">\varepsilon_t</span> of askers to the best helpful answer in an empty region; reset <span class="tex">\varepsilon</span> after a shift</td><td>Optimal recommenders over-recommend untested options to some users <span class="refs">(Kremer, Mansour &amp; Perry 2014; Che &amp; Hörner 2018)</span>; risk-taking speeds discovery in mature fields <span class="refs">(Rzhetsky et al. 2015)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Ration help</td><td>answer only after <span class="tex">s</span> rounds of the team's own search</td><td>Producer–scrounger <span class="refs">(Barnard &amp; Sibly 1981)</span>; strategic experimentation <span class="refs">(Bolton &amp; Harris 1999)</span></td><td><span class="chip idea">proposed</span></td></tr>
+<tr><td>Keep the failures</td><td>train on unhelpful answers as negatives across epochs</td><td>Publishing failures speeds discovery <span class="refs">(Rzhetsky et al. 2015)</span></td><td><span class="chip idea">proposed</span></td></tr>
+</table></div>
+
+<h2>Plan</h2>
+<ol>
+<li><strong>Reach through the interface, LLM</strong> <span class="chip run">running</span>. At 50% shift, 6 seeds: full answers vs edits of at most 3 choices, never updated and retrained on thumbs. In the smoke run the edit interface gave 100% valid answers and 4.8 different answers in 8 samples (full answers: 1.2), so the reward has something to compare.</li>
+<li><strong>Second screen, perfect learners.</strong> The designs in the tables above that have a clear ideal: least help that works (capped), adaptive reach, tweak or leap, recombination from rare donors, local competition, and how often teams ask (rationing). Cheap; run before any of them goes to the LLM.</li>
+<li><strong>Rewards for the LLM that the screen supports.</strong> Inside the edit interface, thumbs is enough at reach 3. If larger reach is wanted for more help now, add the fitness-sharing reward, the one preference that paid off at reach 5 and 10. A set-level reward over each epoch's answers targets the collapse to one answer directly.</li>
+<li><strong>Separate assistants, done properly.</strong> Groups that match clusters in the network, each with its own retrained model and some data sharing between them. This is the "each company its own model" question.</li>
+</ol>
+
+<h2>References</h2>
+<p class="small">Checked against Crossref, arXiv or publisher records on 24 Oct 2026. Books and old proceedings have no DOI.</p>
+<ol class="refs-list">
+<li>Alexander, Himmelreich &amp; Thompson (2015). Epistemic landscapes, optimal search, and the division of cognitive labor. <i>Philosophy of Science</i> 82(3). <a href="https://doi.org/10.1086/681766">10.1086/681766</a></li>
+<li>Ayala &amp; Campbell (1974). Frequency-dependent selection. <i>Annu. Rev. Ecol. Syst.</i> 5. <a href="https://doi.org/10.1146/annurev.es.05.110174.000555">10.1146/annurev.es.05.110174.000555</a></li>
+<li>Banerjee (1992). A simple model of herd behavior. <i>QJE</i>. <a href="https://doi.org/10.2307/2118364">10.2307/2118364</a></li>
+<li>Barnard &amp; Sibly (1981). Producers and scroungers. <i>Animal Behaviour</i>. <a href="https://doi.org/10.1016/S0003-3472(81)80117-0">10.1016/S0003-3472(81)80117-0</a></li>
+<li>Bellemare et al. (2016). Unifying count-based exploration and intrinsic motivation. <i>NIPS</i>. <a href="https://arxiv.org/abs/1606.01868">arXiv:1606.01868</a></li>
+<li>Beyer &amp; Schwefel (2002). Evolution strategies: a comprehensive introduction. <i>Natural Computing</i>. <a href="https://doi.org/10.1023/A:1015059928466">10.1023/A:1015059928466</a></li>
+<li>Bikhchandani, Hirshleifer &amp; Welch (1992). A theory of fads, fashion, custom, and cultural change as informational cascades. <i>JPE</i>. <a href="https://doi.org/10.1086/261849">10.1086/261849</a></li>
+<li>Boden (1990; 2nd ed. 2004). <i>The Creative Mind: Myths and Mechanisms</i>. Routledge.</li>
+<li>Bolton &amp; Harris (1999). Strategic experimentation. <i>Econometrica</i>. <a href="https://doi.org/10.1111/1468-0262.00022">10.1111/1468-0262.00022</a></li>
+<li>Bommasani, Creel, Kumar, Jurafsky &amp; Liang (2022). Picking on the same person: does algorithmic monoculture lead to outcome homogenization? <i>NeurIPS</i>. <a href="https://doi.org/10.52202/068431-0265">10.52202/068431-0265</a></li>
+<li>Boyd &amp; Richerson (1985). <i>Culture and the Evolutionary Process</i>. University of Chicago Press.</li>
+<li>Carbonell &amp; Goldstein (1998). The use of MMR, diversity-based reranking for reordering documents and producing summaries. <i>SIGIR</i>. <a href="https://doi.org/10.1145/290941.291025">10.1145/290941.291025</a></li>
+<li>Chaney, Stewart &amp; Engelhardt (2018). How algorithmic confounding in recommendation systems increases homogeneity and decreases utility. <i>RecSys</i>. <a href="https://doi.org/10.1145/3240323.3240370">10.1145/3240323.3240370</a></li>
+<li>Che &amp; Hörner (2018). Recommender systems as mechanisms for social learning. <i>QJE</i> 133(2). <a href="https://doi.org/10.1093/qje/qjx044">10.1093/qje/qjx044</a></li>
+<li>Chesson (2000). Mechanisms of maintenance of species diversity. <i>Annu. Rev. Ecol. Syst.</i> <a href="https://doi.org/10.1146/annurev.ecolsys.31.1.343">10.1146/annurev.ecolsys.31.1.343</a></li>
+<li>Derex &amp; Boyd (2016). Partial connectivity increases cultural accumulation within groups. <i>PNAS</i>. <a href="https://doi.org/10.1073/pnas.1518798113">10.1073/pnas.1518798113</a></li>
+<li>Doshi &amp; Hauser (2024). Generative AI enhances individual creativity but reduces the collective diversity of novel content. <i>Science Advances</i>. <a href="https://doi.org/10.1126/sciadv.adn5290">10.1126/sciadv.adn5290</a></li>
+<li>Enquist, Eriksson &amp; Ghirlanda (2007). Critical social learning: a solution to Rogers's paradox of nonadaptive culture. <i>American Anthropologist</i> 109(4). <a href="https://doi.org/10.1525/aa.2007.109.4.727">10.1525/aa.2007.109.4.727</a></li>
+<li>Fang, Lee &amp; Schilling (2010). Balancing exploration and exploitation through structural design. <i>Organization Science</i> 21(3). <a href="https://doi.org/10.1287/orsc.1090.0468">10.1287/orsc.1090.0468</a></li>
+<li>Fazelpour, O'Brien &amp; Rubin (2026). Navigating epistemic monocultures in AI-driven science: a simulation study. <a href="https://arxiv.org/abs/2608.19390">arXiv:2608.19390</a></li>
+<li>Fisher (1930). <i>The Genetical Theory of Natural Selection</i>. Clarendon Press.</li>
+<li>Fleming (2001). Recombinant uncertainty in technological search. <i>Management Science</i>. <a href="https://doi.org/10.1287/mnsc.47.1.117.10671">10.1287/mnsc.47.1.117.10671</a></li>
+<li>Goldberg &amp; Richardson (1987). Genetic algorithms with sharing for multimodal function optimization. <i>Proc. 2nd ICGA</i>, 41–49.</li>
+<li>Hamid, Orney, Xu, Finn &amp; Sadigh (2025). Polychromic objectives for reinforcement learning. <a href="https://arxiv.org/abs/2509.25424">arXiv:2509.25424</a></li>
+<li>Hansen &amp; Ostermeier (2001). Completely derandomized self-adaptation in evolution strategies. <i>Evolutionary Computation</i> 9(2). <a href="https://doi.org/10.1162/106365601750190398">10.1162/106365601750190398</a></li>
+<li>Hao, Xu, Li &amp; Evans (2026). Artificial intelligence tools expand scientists' impact but contract science's focus. <i>Nature</i>. <a href="https://doi.org/10.1038/s41586-025-09922-y">10.1038/s41586-025-09922-y</a></li>
+<li>Janzen (1970). Herbivores and the number of tree species in tropical forests. <i>American Naturalist</i>. <a href="https://doi.org/10.1086/282687">10.1086/282687</a></li>
+<li>Kapur (2008). Productive failure. <i>Cognition and Instruction</i>. <a href="https://doi.org/10.1080/07370000802212669">10.1080/07370000802212669</a></li>
+<li>Kirk et al. (2024). Understanding the effects of RLHF on LLM generalisation and diversity. <i>ICLR</i>. <a href="https://arxiv.org/abs/2310.06452">arXiv:2310.06452</a></li>
+<li>Kitcher (1990). The division of cognitive labor. <i>Journal of Philosophy</i>. <a href="https://doi.org/10.2307/2026796">10.2307/2026796</a></li>
+<li>Kleinberg &amp; Raghavan (2021). Algorithmic monoculture and social welfare. <i>PNAS</i> 118(22). <a href="https://doi.org/10.1073/pnas.2018340118">10.1073/pnas.2018340118</a></li>
+<li>Koedinger &amp; Aleven (2007). Exploring the assistance dilemma in experiments with cognitive tutors. <i>Educ. Psychol. Rev.</i> <a href="https://doi.org/10.1007/s10648-007-9049-0">10.1007/s10648-007-9049-0</a></li>
+<li>Kremer, Mansour &amp; Perry (2014). Implementing the "wisdom of the crowd". <i>JPE</i>. <a href="https://doi.org/10.1086/676597">10.1086/676597</a></li>
+<li>Laland (2004). Social learning strategies. <i>Learning &amp; Behavior</i> 32(1). <a href="https://doi.org/10.3758/BF03196002">10.3758/BF03196002</a></li>
+<li>Lazer &amp; Friedman (2007). The network structure of exploration and exploitation. <i>ASQ</i> 52(4). <a href="https://doi.org/10.2189/asqu.52.4.667">10.2189/asqu.52.4.667</a></li>
+<li>Lehman &amp; Stanley (2011a). Abandoning objectives: evolution through the search for novelty alone. <i>Evolutionary Computation</i> 19(2). <a href="https://doi.org/10.1162/EVCO_a_00025">10.1162/EVCO_a_00025</a></li>
+<li>Lehman &amp; Stanley (2011b). Evolving a diversity of virtual creatures through novelty search and local competition. <i>GECCO</i>. <a href="https://doi.org/10.1145/2001576.2001606">10.1145/2001576.2001606</a></li>
+<li>Levinthal (1997). Adaptation on rugged landscapes. <i>Management Science</i> 43(7). <a href="https://doi.org/10.1287/mnsc.43.7.934">10.1287/mnsc.43.7.934</a></li>
+<li>Li et al. (2025). Jointly reinforcing diversity and quality in language model generations. <i>ICLR 2026</i>. <a href="https://arxiv.org/abs/2509.02534">arXiv:2509.02534</a></li>
+<li>Lorenz, Rauhut, Schweitzer &amp; Helbing (2011). How social influence can undermine the wisdom of crowd effect. <i>PNAS</i> 108(22). <a href="https://doi.org/10.1073/pnas.1008636108">10.1073/pnas.1008636108</a></li>
+<li>March (1991). Exploration and exploitation in organizational learning. <i>Organization Science</i> 2(1). <a href="https://doi.org/10.1287/orsc.2.1.71">10.1287/orsc.2.1.71</a></li>
+<li>Meincke, Nave &amp; Terwiesch (2025). ChatGPT decreases idea diversity in brainstorming. <i>Nature Human Behaviour</i>. <a href="https://doi.org/10.1038/s41562-025-02173-x">10.1038/s41562-025-02173-x</a></li>
+<li>Miu, Gulley, Laland &amp; Rendell (2018). Innovation and cumulative culture through tweaks and leaps in online programming contests. <i>Nature Communications</i>. <a href="https://doi.org/10.1038/s41467-018-04494-0">10.1038/s41467-018-04494-0</a></li>
+<li>Mouret &amp; Clune (2015). Illuminating search spaces by mapping elites. <a href="https://arxiv.org/abs/1504.04909">arXiv:1504.04909</a></li>
+<li>Orr (1998). The population genetics of adaptation: the distribution of factors fixed during adaptive evolution. <i>Evolution</i> 52(4). <a href="https://doi.org/10.1111/j.1558-5646.1998.tb01823.x">10.1111/j.1558-5646.1998.tb01823.x</a></li>
+<li>Padmakumar &amp; He (2024). Does writing with language models reduce content diversity? <i>ICLR</i>. <a href="https://arxiv.org/abs/2309.05196">arXiv:2309.05196</a></li>
+<li>Philippi &amp; Seger (1989). Hedging one's evolutionary bets, revisited. <i>TREE</i>. <a href="https://doi.org/10.1016/0169-5347(89)90138-9">10.1016/0169-5347(89)90138-9</a></li>
+<li>Posen &amp; Levinthal (2012). Chasing a moving target. <i>Management Science</i>. <a href="https://doi.org/10.1287/mnsc.1110.1420">10.1287/mnsc.1110.1420</a></li>
+<li>Pugh, Soros &amp; Stanley (2016). Quality diversity: a new frontier for evolutionary computation. <i>Frontiers in Robotics and AI</i>. <a href="https://doi.org/10.3389/frobt.2016.00040">10.3389/frobt.2016.00040</a></li>
+<li>Rogers (1988). Does biology constrain culture? <i>American Anthropologist</i> 90(4). <a href="https://doi.org/10.1525/aa.1988.90.4.02a00030">10.1525/aa.1988.90.4.02a00030</a></li>
+<li>Rzhetsky, Foster, Foster &amp; Evans (2015). Choosing experiments to accelerate collective discovery. <i>PNAS</i>. <a href="https://doi.org/10.1073/pnas.1509757112">10.1073/pnas.1509757112</a></li>
+<li>Siggelkow &amp; Levinthal (2003). Temporarily divide to conquer. <i>Organization Science</i>. <a href="https://doi.org/10.1287/orsc.14.6.650.24840">10.1287/orsc.14.6.650.24840</a></li>
+<li>Song, Kempe &amp; Munos (2025). Outcome-based exploration for LLM reasoning. <a href="https://arxiv.org/abs/2509.06941">arXiv:2509.06941</a></li>
+<li>Thingstad (2000). Elements of a theory for the mechanisms controlling abundance, diversity, and biogeochemical role of lytic bacterial viruses in aquatic systems. <i>Limnol. Oceanogr.</i> <a href="https://doi.org/10.4319/lo.2000.45.6.1320">10.4319/lo.2000.45.6.1320</a></li>
+<li>Uzzi, Mukherjee, Stringer &amp; Jones (2013). Atypical combinations and scientific impact. <i>Science</i>. <a href="https://doi.org/10.1126/science.1240474">10.1126/science.1240474</a></li>
+<li>Walder &amp; Karkhanis (2025). Pass@K policy optimization. <i>NeurIPS</i>. <a href="https://arxiv.org/abs/2505.15201">arXiv:2505.15201</a></li>
+<li>Weisberg &amp; Muldoon (2009). Epistemic landscapes and the division of cognitive labor. <i>Philosophy of Science</i>. <a href="https://doi.org/10.1086/644786">10.1086/644786</a></li>
+<li>Weitzman (1998). Recombinant growth. <i>QJE</i>. <a href="https://doi.org/10.1162/003355398555595">10.1162/003355398555595</a></li>
+<li>Whitley, Rana &amp; Heckendorn (1997). Island model genetic algorithms and linearly separable problems. <i>LNCS</i> 1305. <a href="https://doi.org/10.1007/BFb0027170">10.1007/BFb0027170</a></li>
+<li>Wood, Bruner &amp; Ross (1976). The role of tutoring in problem solving. <i>J. Child Psychol. Psychiatry</i>. <a href="https://doi.org/10.1111/j.1469-7610.1976.tb00381.x">10.1111/j.1469-7610.1976.tb00381.x</a></li>
+<li>Wright (1932). The roles of mutation, inbreeding, crossbreeding and selection in evolution. <i>Proc. 6th Int. Congr. Genetics</i> 1, 356–366.</li>
+<li>Yachi &amp; Loreau (1999). Biodiversity and ecosystem productivity in a fluctuating environment: the insurance hypothesis. <i>PNAS</i> 96(4). <a href="https://doi.org/10.1073/pnas.96.4.1463">10.1073/pnas.96.4.1463</a></li>
+<li>Ziegler et al. (2005). Improving recommendation lists through topic diversification. <i>WWW</i>. <a href="https://doi.org/10.1145/1060745.1060754">10.1145/1060745.1060754</a></li>
+<li>Zollman (2007). The communication structure of epistemic communities. <i>Philosophy of Science</i> 74(5). <a href="https://doi.org/10.1086/525605">10.1086/525605</a></li>
+<li>Zollman (2010). The epistemic benefit of transient diversity. <i>Erkenntnis</i> 72. <a href="https://doi.org/10.1007/s10670-009-9194-6">10.1007/s10670-009-9194-6</a></li>
+</ol>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+(function () {
+  if (!window.katex) return;
+  document.querySelectorAll(".tex, .texd").forEach(function (el) {
+    try {
+      katex.render(el.textContent, el, { output: "mathml", displayMode: el.classList.contains("texd"), throwOnError: false });
+    } catch (e) { /* leave the TeX source visible */ }
+  });
+})();
+</script>

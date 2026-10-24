@@ -14,7 +14,8 @@ scored by one of these rewards (each is zero unless the answer helps the asker, 
   local      thumbs, but only if the answer changes at most `reach` bits of the asker's approach
              (improve my approach, do not replace it; P4a: reach, not novelty, sets the culture's diversity)
 
-`--kl` adds the usual penalty toward the untrained model. Between epochs the problem changes and the
+`--kl` adds the usual penalty toward the untrained model. `--edits k` changes the interface: instead of a
+full approach the model names at most k choices to flip in the asker's approach (reach k by design). Between epochs the problem changes and the
 updated model is redeployed. This is the loop of a deployed model retrained on its users' feedback.
 
   python -m src.llm.culture_llm --reward hcreative --seed 0 --out results/p4b/hcreative_s0
@@ -27,12 +28,21 @@ import types
 
 import numpy as np
 
-from src.llm.online import LLM, P_SOCIAL, parse, popcount, render, top_context
+from src.llm.online import LLM, P_SOCIAL, parse, parse_edits, popcount, render, top_context
 from src.nk import Landscape
 from src.sim import Community, mean_pairwise_hamming, step as sim_step
 
 N, K, M, H = 20, 9, 10, 10
 MC = np.int64((1 << M) - 1)
+
+
+def answer(text, asker, edits):
+    """The module the reply proposes: ten digits (full answer), or the asker's module with at most
+    `edits` choices flipped (edit interface). None if the reply has neither."""
+    if not edits:
+        return parse(text)
+    mask = parse_edits(text, edits)
+    return None if mask is None else (int(asker) & int(MC)) ^ mask
 
 
 def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3):
@@ -59,6 +69,8 @@ def main():
     ap.add_argument("--reward", default="thumbs", choices=["frozen", "thumbs", "pcreative", "hcreative", "local"])
     ap.add_argument("--lam", type=float, default=1.0, help="novelty bonus weight")
     ap.add_argument("--reach", type=int, default=3, help="most bits a rewarded answer may change (local)")
+    ap.add_argument("--edits", type=int, default=0,
+                    help="edit interface: the model names at most this many choices to flip (0 = full answers)")
     ap.add_argument("--kl", type=float, default=0.0)
     ap.add_argument("--model", default="Qwen/Qwen3-4B-Instruct-2507")
     ap.add_argument("--seed", type=int, default=0)
@@ -132,10 +144,10 @@ def main():
             culture = np.unique(codes & MC)
             shown, helped = [], []
             if len(idx):
-                _, _, texts = llm.sample([render(codes[i], context=ctx) for i in idx], 1,
+                _, _, texts = llm.sample([render(codes[i], context=ctx, edits=args.edits) for i in idx], 1,
                                          seed=args.seed * 100003 + e * 1000 + t)
                 for j, i in enumerate(idx):
-                    s = parse(texts[j])
+                    s = answer(texts[j], codes[i], args.edits)
                     log.append((int(codes[i]), float(fit[i]), ctx, culture))
                     if s is None:
                         continue
@@ -169,13 +181,13 @@ def main():
             R_all, G_all, D_all = [], [], []
             for c0 in range(0, len(pick), args.chunk):
                 batch = [log[k] for k in pick[c0:c0 + args.chunk]]
-                out, P, texts = llm.sample([render(a, context=c) for a, _, c, _ in batch], args.G,
+                out, P, texts = llm.sample([render(a, context=c, edits=args.edits) for a, _, c, _ in batch], args.G,
                                            seed=args.seed * 100003 + e * 1000 + 999 + c0,
                                            temperature=args.update_temperature)
                 R = np.zeros((len(batch), args.G))
                 for bi, (a, fa, _, cult) in enumerate(batch):
                     for j in range(args.G):
-                        R[bi, j], g = reward(args.reward, parse(texts[bi * args.G + j]), a, fa, F, cult, args.lam,
+                        R[bi, j], g = reward(args.reward, answer(texts[bi * args.G + j], a, args.edits), a, fa, F, cult, args.lam,
                                              args.reach)
                         G_all.append(g)
                     D_all.append(len({texts[bi * args.G + j] for j in range(args.G)}))

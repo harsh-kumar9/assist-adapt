@@ -36,6 +36,12 @@ USER = ("A team's approach is 20 yes/no choices, written as digits (1 = yes).\n"
         "Recommend values for choices 1-10. Reply with exactly ten digits and nothing else.")
 
 
+# P4b option 2: the assistant suggests edits (which choices to flip), at most k of them
+EDIT_ASK = ("Suggest up to {k} of choices 1-10 to flip. Reply with their numbers separated by commas "
+            "(for example: {example}) and nothing else.")
+FULL_ASK = "Recommend values for choices 1-10. Reply with exactly ten digits and nothing else."
+
+
 STEP_BACK = "\nIf no change would help, repeat the current values and the team will explore on its own."
 
 
@@ -59,9 +65,11 @@ def top_context(codes, fit, k, N=20, M=10):
     return out
 
 
-def render(code, N=20, M=10, step_back=False, context=None):
+def render(code, N=20, M=10, step_back=False, context=None, edits=0):
     bits = [(int(code) >> j) & 1 for j in range(N)]
     text = USER.format(mc="".join(map(str, bits[:M])), rest="".join(map(str, bits[M:])))
+    if edits:
+        text = text.replace(FULL_ASK, EDIT_ASK.format(k=edits, example=", ".join(["2", "7", "9"][:edits])))
     if context:
         lines = "".join(f"{i + 1}. {digits(c, 0, M)} | {digits(c, M, N)}, score {f:.2f}\n"
                         for i, (c, f) in enumerate(context))
@@ -75,6 +83,18 @@ def parse(text, M=10):
     if not m:
         return None
     return sum(int(ch) << j for j, ch in enumerate(m.group(0)))
+
+
+def parse_edits(text, k, M=10):
+    """Numbers 1..M in the reply, first k distinct ones -> bit mask of choices to flip, or None."""
+    pos = []
+    for x in re.findall(r"\d+", text):
+        x = int(x)
+        if 1 <= x <= M and x not in pos:
+            pos.append(x)
+    if not pos:
+        return None
+    return sum(1 << (p - 1) for p in pos[:k])
 
 
 def chat_text(tok, user):

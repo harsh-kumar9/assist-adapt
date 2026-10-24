@@ -19,14 +19,17 @@ from scipy import stats
 from src.analyze import GRID, INK, mark_panels, plt, save, write_rows
 from src.llm.analyze_p3 import ARM_COLORS
 
-ARMS = ["frozen", "thumbs", "thumbskl", "pcreative", "hcreative", "thumbsT2", "pcreativeT2", "hcreativeT2", "localT2"]
+ARMS = ["frozen", "thumbs", "thumbskl", "pcreative", "hcreative", "thumbsT2", "pcreativeT2", "hcreativeT2", "localT2",
+        "frozenE3", "thumbsE3T2"]
 NAMES = {"frozen": "LLM, never updated", "thumbs": "thumbs", "thumbskl": "thumbs + KL",
          "pcreative": "P-creativity", "hcreative": "H-creativity", "thumbsT2": "thumbs, explore", "pcreativeT2": "P-creativity, explore",
-         "hcreativeT2": "H-creativity, explore", "localT2": "edit within 3 bits, explore", "none": "No AI", "pcc": "PCC (oracle full answer)",
+         "hcreativeT2": "H-creativity, explore", "localT2": "edit within 3 bits, explore",
+         "frozenE3": "edit interface (3), never updated", "thumbsE3T2": "edit interface (3), thumbs", "none": "No AI", "pcc": "PCC (oracle full answer)",
          "sbp": "SBP (oracle nudge)"}
 COLORS = {"frozen": "#b8b6ad", "thumbs": ARM_COLORS["thumbs"], "thumbskl": ARM_COLORS["thumbskl"],
           "pcreative": "#eda100", "hcreative": "#1baf7a", "thumbsT2": ARM_COLORS["thumbs"], "pcreativeT2": "#eda100",
-          "hcreativeT2": "#1baf7a", "localT2": "#e87ba4", "none": "#898781", "pcc": "#c98500", "sbp": ARM_COLORS["sbp"]}
+          "hcreativeT2": "#1baf7a", "localT2": "#e87ba4", "frozenE3": "#7fd1b0",
+          "thumbsE3T2": "#0f7a52", "none": "#898781", "pcc": "#c98500", "sbp": ARM_COLORS["sbp"]}
 
 
 def load(root, rounds=60):
@@ -124,7 +127,7 @@ def main(root="results/p4b", p4a="results/p4a", arms=None, tag="", burn=2):
     for key, ax, lab in series:
         for a in arms:
             y = np.nanmean([runs[a][s][key][:n_ep] for s in seeds], 0)
-            ax.plot(ep, y, "--" if a.endswith("T2") else "-", lw=1.1, color=COLORS[a], label=NAMES[a])
+            ax.plot(ep, y, "--" if a.endswith("T2") and "E" not in a else "-", lw=1.1, color=COLORS[a], label=NAMES[a])
         if key in ("div", "fit") and none is not None:
             ax.plot(ep, none[key][:, :n_ep].mean(0), "--", lw=0.9, color=COLORS["none"], label=NAMES["none"])
             if orc["pcc"] is not None:

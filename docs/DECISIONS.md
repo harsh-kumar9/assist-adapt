@@ -653,3 +653,72 @@ homogenisation costs something with turnover (larger shift, rho 0.8; CPU); (2) g
 through the interface instead of the reward: ask for at most k bit changes to the asker's approach
 (an edit, as in "suggest changes to my draft") rather than a full approach, and let thumbs choose among
 edits; (3) more update steps per epoch.
+
+## D-016 Design space of rewards and interactions (Harsh, 2026-10-24: "do 1 then 2. we should more systematically explore the design space of reward models and interactions. ground in literature ... show me the equations of all reward models we have")
+
+Equations of every reward and oracle so far: docs/REWARDS.md.
+
+### Option 1: does homogenisation cost anything with turnover? (P4a oracles, 200 seeds; results/p4a_cost, figures/p4a_cost)
+
+Grid: shift 0.2 / 0.5 / 1.0 x rho 1 / 0.8 x turnover 0 / 0.01; assistants SBP, best within reach 2/3/5/10,
+PCC, ideal thumbs, ideal H-creativity. New measure: the next problem with the AI removed, round 30.
+- Shift 0.2 (P4b so far): the next problem is close to this one, so whatever raised fitness carries over;
+  no cost of homogenisation (reach 10 +27.8% at round 30, reach 3 +27.1%).
+- Shift 1.0: nothing carries over; every assistant within +-2% of no AI at round 30.
+- Shift 0.5, rho 1, turnover 0.01: homogenisation costs. Round 30 of the next problem, AI removed, vs no
+  AI: SBP +3.7%, reach 2 +7.0%, reach 3 +7.3%, reach 5 +3.9%, reach 10 +1.9%, PCC -1.0% (diversity
+  3.04, 3.04, 2.80, 2.11, 1.77, 1.81; no AI 2.82). Paired: reach 3 - reach 10 +5.4% [4.3, 6.5],
+  reach 3 - PCC +8.3% [6.9, 9.8]. Reach 10 helps more while assisted (+73% vs +55%) and less later. PCC
+  (the oracle closest to the trained LLM) gives +20% while assisted and nothing after.
+- Without turnover the cultures converge anyway (diversity 0.1-1.0) and differences are small.
+So the cost of narrowing shows at intermediate change, which is where the rest of D-016 runs: rho 1,
+turnover 0.01, shift 0.5 (shift 0.2 kept as the second setting).
+
+### Option 2 launched: reach through the interface (jobs 421293-421316, results/p4b_s05)
+
+`--edits k`: the model names at most k choices to flip instead of writing a full approach (reach k by
+design). Smoke (job 421260): all answers valid, 4.8 distinct of 8 samples per request (full answers:
+1.2), 58% helpful at the start of a run. Arms at shift 0.5, 6 seeds: frozen and thumbs (temperature 2)
+with full answers; frozen and thumbs (temperature 2) with edits of at most 3.
+
+### Design-space oracle grid (jobs 421284-421291, results/p4a_grid)
+
+Ideal assistants by answer source (any module / only modules held in the culture, i.e. copying) x
+preference among helpful answers within reach (largest gain / any / rarest = fitness sharing) x reach
+1-10, plus 4 and 10 separate assistants (islands) for the copying source. Shift 0.2 and 0.5. Purpose:
+screen designs cheaply before giving any to the LLM. Literature grounding for the axes: verified
+bibliography from a literature pass (2026-10-24), to go in the design-space page.
+
+### Cost grid at rho 0.8, and the first design-space screen (2026-10-24)
+
+rho 0.8 (the best module depends on each team's other choices): with turnover, searching help keeps the
+culture more diverse than no AI at every reach (shift 0.5: reach 1 3.16 ... reach 10 3.33, no AI 2.79) and
+later fitness rises with reach (round 30 of the next problem, AI off: +3.8% at reach 1, +9.6% at reach 10).
+Copying (PCC) still narrows (2.76) and leaves +3.5%. So: copying is the bad choice at both rho; reach
+matters when everyone's best answer is the same (rho 1). Earlier wording "reach, not preference, sets
+diversity" holds at rho 1 only.
+
+First screen (rho 1, turnover 0.01, shift 0.5 and 0.2; 200 seeds; results/p4a_grid, figures/p4a_grid_*,
+results/summary/p4a_grid_*.csv). Source x preference x reach, plus islands. At shift 0.5:
+- Copying from the culture is the worst trade at every reach (+3 to +26% while assisted, at most +2.6% on
+  the next problem); searching any module at reach 3: +55% / +7.3%.
+- Later fitness peaks at reach 2-3 for every preference.
+- Rarest helpful answer (fitness sharing) vs largest gain: +2.9 points on the next problem at reach 5 and 10
+  (p < 1e-11), diversity +0.2, about 3 points less help while assisted; no difference at reach 2-3. Random
+  helpful is worse than largest gain at small reach (-1.6, p = 0.01).
+- Correction to the earlier reading: at full reach the ideal novelty learners (1.94) are more diverse than
+  the greedy helper (1.58) and about as diverse as random-helpful (1.95); preference moves diversity by
+  ~0.3, reach by ~1.2.
+- 4 or 10 separate copying assistants: no benefit (islands are scattered over one random network, so teams
+  copy across them; needs network-aligned groups).
+At shift 0.2 the ordering of diversity is the same, but later fitness is carry-over and rarity does not help.
+
+Design-space page (equations of all rewards, the five design choices with verified literature, results):
+docs/design-space.html, published at https://claude.ai/artifact/NLTTiQwjtxaMKMXewr88vF.
+
+Second screen launched (jobs 421351-421357): least help that works (capped at 2/3/5), local competition
+(reach 3/5/10), tweak or leap (reach 2-3, leap share 10-25%), recombination toward a rare donor (at most
+3/5/10 bits), use rate 0.25 and 0.75; and the first screen at rho 0.8. Adaptive reach (1/5 rule) not
+screened: with an oracle that searches its whole range, "no success" means no improvement within reach,
+so the ES rule (shrink the step on failure) points the wrong way; it fits an LLM that proposes, not an
+exhaustive oracle.
