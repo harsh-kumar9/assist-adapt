@@ -503,3 +503,34 @@ the frozen evaluation both run; Gemma's first answers improve 47-79% of askers a
 askers get the same answer.
 Write-up: LaTeX in paper/ (Overleaf-ready; no TeX compiler on the Mac or ada), with a readable PDF
 preview rendered from the same source.
+
+## D-015 Culture over time: the minimum addition, and rewards for per-epoch learning (2026-10-24)
+
+Harsh: "keep what we have but also explore culture over time. I want to test different reward models
+for RL. e.g., incentivizing p-creativity, h-creativity, what else? question is what is the minimum
+addition to the original paper ... to study what happens if LLMs are assisting over time, and can we
+learn something at each epoch to break the curse of homogenization over time. this can have
+implications for continual learning, and for ... AI for science or companies deploying their own LLMs".
+Also asked "whats the RQ ... why assisted vs unassisted"; answered that the current framing (help now vs
+adapt later) came from the pruning step and treats homogenization as mechanism, not outcome, and that the
+original model cannot show homogenization over time because every community converges within ~60 rounds.
+
+Minimum addition (proposed): two changes, everything else as in Fazelpour et al.
+1. Turnover: each round each team leaves with probability mu and is replaced by a newcomer with a random
+   approach and specialization. Gives diversity a steady state for an assistant to push down.
+2. Epochs with a learning assistant: the problem changes every epoch (20% of payoffs) and the assistant
+   is retrained once per epoch on that epoch's requests, then redeployed frozen. The loop of a deployed
+   model retrained on its users' feedback.
+Rewards for the per-epoch update (all zero unless the answer helps the asker):
+- thumbs (helpfulness; with and without KL), the current practice;
+- P-creativity: bonus for distance from the asker's own approach (new to the person). Copying a peer is
+  P-creative; prediction: still homogenises (individual novelty up, collective diversity down);
+- H-creativity: bonus for distance from the nearest approach anyone in the culture holds (new to the
+  culture). Copying earns no bonus; prediction: breaks the ratchet;
+- later: diversity gain after uptake, rarity, delayed reward (after the next change), community welfare,
+  SFT on adopted answers (the model-collapse loop).
+Pilots: P4a (CPU, oracles, turnover 0-0.02, rho 1 and 0.8, 200 seeds, 20 epochs; job 420513): is there a
+steady state, does copy-style help lower it? P4b (GPU, Qwen with context, frozen / thumbs / thumbs+KL /
+pcreative / hcreative, 20 epochs, 6 seeds, ~25 GPU-hours; src/llm/culture_llm.py): does the culture's
+diversity ratchet down across epochs, and which reward stops it? Novelty is measured against the living
+culture, not all of history: with 1,024 possible modules a history archive fills within a few epochs.
