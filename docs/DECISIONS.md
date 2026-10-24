@@ -534,3 +534,21 @@ steady state, does copy-style help lower it? P4b (GPU, Qwen with context, frozen
 pcreative / hcreative, 20 epochs, 6 seeds, ~25 GPU-hours; src/llm/culture_llm.py): does the culture's
 diversity ratchet down across epochs, and which reward stops it? Novelty is measured against the living
 culture, not all of history: with 1,024 possible modules a history archive fills within a few epochs.
+
+Gemma replication on hold (Harsh, 2026-10-24: "the gemma reproducibility runs we can hold off for now,
+lets focus on this"). The 8 runs already running (thumbs and pairwisefix, seeds 0-3) finish; the 16
+pending ones are held with `scontrol hold` (release with `scontrol release <ids>`). Focus is D-015.
+
+### P4a result and P4b launch (2026-10-24)
+
+P4a (200 seeds, 20 epochs of 60 rounds, results/summary/p4a_culture.csv, figures/p4a_culture): turnover
+gives a steady state. No-AI diversity (mean pairwise Hamming): 0.12 (mu 0), 1.61 (0.005), 2.56 (0.01),
+3.85 (0.02). At rho = 1, copy-style help lowers it by ~37% (PCC 1.62 and gated 1.65 vs 2.56 at mu
+0.01) and nudges do not (SBP 2.72); at rho = 0.8, PCC does not lower it. No ratchet with oracles:
+diversity's trend across epochs relative to no AI is flat for every assistant (all p > 0.1). While the
+oracle is present the lower diversity costs nothing: assisted cultures do 10-55% better, also in the
+first 10 rounds after each change. So an assistant that always knows the truth can homogenise a culture
+for free; the question for P4b is what happens when the assistant's knowledge comes from the culture.
+P4b launched: rho = 1, mu = 0.01, context 3, 20 epochs of 60 rounds, 6 seeds x {frozen, thumbs,
+thumbs + KL 0.05, pcreative, hcreative} (lam 1), 256 requests x 8 answers per epoch update. 30 runs,
+results/p4b. Smoke (job 420516) passed.
