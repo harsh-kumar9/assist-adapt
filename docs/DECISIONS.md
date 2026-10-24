@@ -629,3 +629,27 @@ thumbs only if the answer changes at most 3 bits of the asker's approach ("impro
 replace it"), update temperature 2, seeds 0-5, results/p4b/localT2_s*; compare with thumbs at
 temperature 2. Open: whether diversity matters for anything in this setting (it does not for the next
 problem at shift 0.2); candidates are a larger shift and rho 0.8, where P3 found the costs.
+
+### Local reward result, and a correction to the probe numbers (2026-10-24)
+
+Local reward (thumbs only for answers within 3 bits of the asker's approach, update temperature 2,
+6 seeds): culture diversity 1.63 vs thumbs at temperature 2 1.65 (paired -0.03, p = 0.45); fitness while
+assisted slightly lower (-0.03, p = 0.04). Its reward falls to ~0 in late epochs for most seeds: the
+model almost never proposes a helpful answer within 3 bits, so there is little to learn from. Probe:
+the local models still answer with the top approach (copy share 0.83 vs 0.41 for thumbs at temperature 2,
+p = 0.08), and their helpful answers still rewrite ~4.6 bits. The reward did not teach small edits.
+
+Correction to the probe summary above: the mean helpful share (1.7% untrained -> 21-22% trained) is
+driven by seed 0, where the trained models' one answer helps 99% of teams. Per seed the median is 2.1%
+untrained and 6-8% trained. Every trained model gives nearly the same answer to every team (1.0-1.3
+distinct of 8 samples; the top approach or one other fixed approach). The finding that none of the
+trained models' helpful answers is new to the culture stands.
+
+Reading: per-epoch reward learning from sparse feedback collapses the model to one answer per culture,
+whatever the reward. Within the reward family tested (thumbs, + KL, P-creativity, H-creativity, local;
+with and without exploration) nothing changes the culture's diversity. The oracle sweep says reach is
+the lever, and the LLM does not learn reach from reward. Next options (proposed, not run): (1) check that
+homogenisation costs something with turnover (larger shift, rho 0.8; CPU); (2) give reach to the model
+through the interface instead of the reward: ask for at most k bit changes to the asker's approach
+(an edit, as in "suggest changes to my draft") rather than a full approach, and let thumbs choose among
+edits; (3) more update steps per epoch.
