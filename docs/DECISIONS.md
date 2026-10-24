@@ -552,3 +552,40 @@ for free; the question for P4b is what happens when the assistant's knowledge co
 P4b launched: rho = 1, mu = 0.01, context 3, 20 epochs of 60 rounds, 6 seeds x {frozen, thumbs,
 thumbs + KL 0.05, pcreative, hcreative} (lam 1), 256 requests x 8 answers per epoch update. 30 runs,
 results/p4b. Smoke (job 420516) passed.
+
+P4b first look (seed 0, epochs 1-5, 2026-10-24): with the community's best approaches in the prompt,
+even the never-updated model gives the same answer to 81-99% of askers within an epoch (it copies the
+top-scoring approach), and its 8 samples per request for the update are nearly identical (1.0-1.2
+distinct). GRPO learns only from differences within a group, so every reward then gives zero advantage
+and nothing is learned: the reward variants cannot differ if the model never proposes anything else.
+The running batch stays as the "standard practice" condition (update samples at temperature 1). Added
+`--update-temperature` (deployment unchanged) and a diagnostic (src/llm/temp_probe.py, job 420561) of
+answer variety, validity, helpfulness and new-to-culture share at temperatures 1.0-2.0, to choose an
+exploration setting for a second batch (proposed: thumbs, P-creativity, H-creativity at that temperature).
+
+### P4b standard practice, first result (2026-10-24, 4 of 6 seeds finished)
+
+Temperature check (job 420561; 24 askers x 3 seeds, no-AI cultures after 30 rounds, 8 answers each):
+distinct answers per request 1.97 / 2.25 / 2.69 / 3.18 at temperature 1.0 / 1.3 / 1.6 / 2.0; all valid
+at every temperature; helpful 0.17 -> 0.15; new to the culture 0.25 -> 0.30. In the LLM's own (already
+narrower) cultures the update groups had 1.0-1.5 distinct answers at temperature 1.
+
+Standard practice (update at temperature 1), seeds 0-3, epochs 3-20 (results/summary/p4b_culture_llm.csv,
+figures/p4b_culture_llm). Culture diversity, mean pairwise Hamming: no AI 2.64, LLM never updated 1.93,
+thumbs 1.59, thumbs + KL 1.62, P-creativity 1.75, H-creativity 1.57 (PCC oracle in P4a: 1.62). Paired
+with the never-updated model: thumbs -0.34 (p = 0.009), thumbs + KL -0.30 (p = 0.02), H-creativity
+-0.36 (p = 0.008), P-creativity -0.18 (p = 0.25). Retraining does learn something: the share of answers
+that help rises from 0.028 to 0.040-0.046. No ratchet: the gap to the never-updated model is flat across
+epochs for every reward (slopes within +-0.01 per epoch, all p > 0.3). Fitness while assisted and on the
+next problem with the AI removed: no difference from no AI or from the never-updated model (wide CIs).
+Reading: the deployed model homogenises the culture within the first epoch (it hands out the top
+approach), and retraining on thumbs makes it homogenise as much as an oracle that hands out full answers.
+The novelty bonuses change nothing because the model almost never proposes two different helpful answers
+to the same request, so there is nothing for the bonus to choose between.
+
+Exploration batch launched (jobs 420636-420653): thumbs, P-creativity and H-creativity with update
+samples at temperature 2.0 (deployment stays at 1.0), seeds 0-5, results/p4b/{thumbs,pcreative,
+hcreative}T2_s*. The question: once the model proposes alternatives, does a reward for novelty to the
+culture keep the culture more diverse than thumbs does, at what cost in help? Note: samples come from
+the temperature-2 distribution while the gradient is taken on the temperature-1 policy (no importance
+correction); this is a common exploration shortcut and is noted as such.

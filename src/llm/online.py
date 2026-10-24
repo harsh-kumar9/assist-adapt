@@ -126,13 +126,14 @@ class LLM:
     def chat(self, user):
         return chat_text(self.tok, user)
 
-    def sample(self, users, G, seed):
+    def sample(self, users, G, seed, temperature=None):
         torch = self.torch
+        temperature = self.args.temperature if temperature is None else temperature
         torch.manual_seed(seed)
         enc = self.tok([self.chat(u) for u in users], return_tensors="pt", padding=True).to(self.args.device)
         self.model.eval()
         with torch.no_grad():
-            out = self.model.generate(**enc, use_cache=True, do_sample=True, temperature=self.args.temperature, top_p=1.0,
+            out = self.model.generate(**enc, use_cache=True, do_sample=True, temperature=temperature, top_p=1.0,
                                       top_k=0, max_new_tokens=self.args.max_new_tokens,
                                       num_return_sequences=G, pad_token_id=self.tok.pad_token_id)
         P = enc["input_ids"].shape[1]

@@ -70,7 +70,9 @@ def main():
     ap.add_argument("--chunk", type=int, default=64, help="prompts per GRPO step")
     ap.add_argument("--lr", type=float, default=5e-5)
     ap.add_argument("--lora-r", type=int, default=16)
-    ap.add_argument("--temperature", type=float, default=1.0)
+    ap.add_argument("--temperature", type=float, default=1.0, help="sampling temperature while deployed")
+    ap.add_argument("--update-temperature", type=float, default=None,
+                    help="sampling temperature for the per-epoch update (default: same as deployed)")
     ap.add_argument("--max-new-tokens", type=int, default=16)
     ap.add_argument("--micro-batch", type=int, default=48)
     ap.add_argument("--save-epochs", default="1,5,10,20")
@@ -163,7 +165,8 @@ def main():
             for c0 in range(0, len(pick), args.chunk):
                 batch = [log[k] for k in pick[c0:c0 + args.chunk]]
                 out, P, texts = llm.sample([render(a, context=c) for a, _, c, _ in batch], args.G,
-                                           seed=args.seed * 100003 + e * 1000 + 999 + c0)
+                                           seed=args.seed * 100003 + e * 1000 + 999 + c0,
+                                           temperature=args.update_temperature)
                 R = np.zeros((len(batch), args.G))
                 for bi, (a, fa, _, cult) in enumerate(batch):
                     for j in range(args.G):
