@@ -39,7 +39,8 @@ def main(d="results/p4a", rounds=60, burn=5):
     res = load(d)
     rhos = sorted({k[0] for k in res}, reverse=True)
     mus = sorted({k[1] for k in res})
-    arms = [a for a in ("none", "sbp", "pcc", "gated") if any(k[2] == a for k in res)]
+    arms = [a for a in ("none", "sbp", "pcc", "gated", "rhelp", "maxp", "maxh", "minp") if any(k[2] == a for k in res)]
+    fig_arms = [a for a in arms if a in ("none", "sbp", "pcc", "gated")]
     rows = []
     for rho in rhos:
         for mu in mus:
@@ -50,6 +51,8 @@ def main(d="results/p4a", rounds=60, burn=5):
             b_fit = per_epoch(base["fit"], rounds)[:, burn:].mean(1)
             b_adapt = per_epoch(base["fit"], rounds, 0, 10)[:, burn:].mean(1)
             for a in arms:
+                if (rho, mu, a) not in res:
+                    continue
                 r = res[(rho, mu, a)]
                 div_e = per_epoch(r["div"], rounds, -20)
                 div = div_e[:, burn:].mean(1)
@@ -75,7 +78,7 @@ def main(d="results/p4a", rounds=60, burn=5):
     mu_main = 0.01 if 0.01 in mus else mus[len(mus) // 2]
     fig, axes = plt.subplots(1, 4, figsize=(7.2, 2.1), constrained_layout=True)
     ax = axes[0]
-    for a in arms:
+    for a in fig_arms:
         x = res[(rho, mu_main, a)]["div"].mean(0)
         ax.plot(np.arange(len(x)) / rounds, x, lw=0.8, color=ARM_COLORS[a], label=ARM_NAMES[a])
     ax.set_xlabel("Epoch")
@@ -85,7 +88,7 @@ def main(d="results/p4a", rounds=60, burn=5):
     for ax, key, lab in ((axes[1], "div", "Diversity at steady state"),
                          (axes[2], "fit_pct", "Fitness while assisted\n(% vs no AI)"),
                          (axes[3], "adapt_pct", "Fitness in first 10 rounds\nafter a change (% vs no AI)")):
-        for a in arms:
+        for a in fig_arms:
             ys = [next(r[key] for r in rows if r["rho"] == rho and r["mu"] == m and r["assistant"] == a) for m in mus]
             if key != "div" and a == "none":
                 continue

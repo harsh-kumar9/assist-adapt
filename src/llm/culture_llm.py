@@ -11,6 +11,8 @@ scored by one of these rewards (each is zero unless the answer helps the asker, 
   thumbs     1 if the answer improved the asker
   pcreative  thumbs x (1 + lam * distance from the asker's own approach / M): new to the person
   hcreative  thumbs x (1 + lam * distance from the nearest approach anyone holds / M): new to the culture
+  local      thumbs, but only if the answer changes at most `reach` bits of the asker's approach
+             (improve my approach, do not replace it; P4a: reach, not novelty, sets the culture's diversity)
 
 `--kl` adds the usual penalty toward the untrained model. Between epochs the problem changes and the
 updated model is redeployed. This is the loop of a deployed model retrained on its users' feedback.
@@ -33,7 +35,7 @@ N, K, M, H = 20, 9, 10, 10
 MC = np.int64((1 << M) - 1)
 
 
-def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam):
+def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3):
     """Returns (reward, gain). sugg is a module int or None."""
     if sugg is None:
         return 0.0, 0.0
@@ -42,6 +44,8 @@ def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam):
     helped = 1.0 if gain > 0 else 0.0
     if kind == "thumbs":
         return helped, gain
+    if kind == "local":
+        return helped * (popcount(sugg ^ (asker & MC)) <= reach), gain
     if kind == "pcreative":
         return helped * (1 + lam * popcount(sugg ^ (asker & MC)) / M), gain
     if kind == "hcreative":
@@ -52,8 +56,9 @@ def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--reward", default="thumbs", choices=["frozen", "thumbs", "pcreative", "hcreative"])
+    ap.add_argument("--reward", default="thumbs", choices=["frozen", "thumbs", "pcreative", "hcreative", "local"])
     ap.add_argument("--lam", type=float, default=1.0, help="novelty bonus weight")
+    ap.add_argument("--reach", type=int, default=3, help="most bits a rewarded answer may change (local)")
     ap.add_argument("--kl", type=float, default=0.0)
     ap.add_argument("--model", default="Qwen/Qwen3-4B-Instruct-2507")
     ap.add_argument("--seed", type=int, default=0)
@@ -170,7 +175,8 @@ def main():
                 R = np.zeros((len(batch), args.G))
                 for bi, (a, fa, _, cult) in enumerate(batch):
                     for j in range(args.G):
-                        R[bi, j], g = reward(args.reward, parse(texts[bi * args.G + j]), a, fa, F, cult, args.lam)
+                        R[bi, j], g = reward(args.reward, parse(texts[bi * args.G + j]), a, fa, F, cult, args.lam,
+                                             args.reach)
                         G_all.append(g)
                     D_all.append(len({texts[bi * args.G + j] for j in range(args.G)}))
                 adv = (R - R.mean(1, keepdims=True)) / (R.std(1, keepdims=True) + 1e-4)

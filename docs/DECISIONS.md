@@ -589,3 +589,43 @@ hcreative}T2_s*. The question: once the model proposes alternatives, does a rewa
 culture keep the culture more diverse than thumbs does, at what cost in help? Note: samples come from
 the temperature-2 distribution while the gradient is taken on the temperature-1 policy (no importance
 correction); this is a common exploration shortcut and is noted as such.
+
+### P4b full result, why novelty rewards fail, and what sets diversity (2026-10-24)
+
+All 42 runs done (6 seeds). Culture diversity, epochs 3-20 (no AI 2.69 on these seeds; never-updated LLM
+1.91). Paired with the never-updated model: thumbs -0.30 (p = 0.002), thumbs + KL -0.28 (p = 0.002),
+P-creativity -0.15 (p = 0.14), H-creativity -0.29 (p = 0.004); with exploration (update samples at
+temperature 2): thumbs -0.26 (p = 0.008), P-creativity -0.29 (p = 0.002), H-creativity -0.23 (p = 0.05).
+Against thumbs at the same temperature no reward differs (all p > 0.1; P-creativity at temperature 1 is
++0.14, p = 0.10, and goes away with exploration). Exploration did raise variety in the update groups (1.2
+-> 1.7-1.9 distinct answers of 8). No ratchet in any arm. Next problem with the AI removed: no arm
+differs from the never-updated model.
+
+Policy probe (job 420982, src/llm/policy_probe.py, results/p4b_probe): every epoch-20 model and the
+untrained one answer the same 100 teams x 8 samples in the never-updated model's final culture.
+Training works on help: helpful answers 1.7% untrained -> 21-22% for every reward. But among the trained
+models' helpful answers, none is new to the culture (0.000 in all 42 models; untrained 17%), and they
+rewrite ~4.7 of the asker's 10 bits. The trained model helps by handing out an approach someone already
+holds. So the H-creativity bonus is never paid and H-creativity trains exactly like thumbs.
+
+Ideal learners (P4a, 200 seeds, rho 1, mu 0.01; results/p4a and results/p4a_reach, figures/p4a_reach):
+what if the model learned each reward perfectly, searching all 1,024 modules? Diversity: any helpful
+module (ideal thumbs) 1.95, farthest from the asker (ideal P-creativity) 1.88, farthest from the culture
+(ideal H-creativity) 1.94; PCC (best approach already in the culture, which is what the trained LLM does)
+1.62; no AI 2.56. The preference among helpful answers changes the route, not the end: adoption needs an
+improvement, so repeated strong help takes each team to its best module whatever the reward prefers.
+What sets diversity is reach, how many bits the assistant may change: best module within 1 bit (SBP)
+2.72, within 2: 2.74, 3: 2.53, 5: 1.90, 10: 1.58. Help while assisted (% vs no AI): +9.5, +35, +52, +66,
++69. Next problem with the AI removed (new P4a probe, same as P4b's): +7, +21, +30, +34, +34. So reach 3
+keeps diversity at the no-AI level with three quarters of the maximum help and most of the carry-over to
+the next problem. PCC is the worst trade: as homogenising as unlimited reach, a third of the help (+23%,
+next problem +13%). In this setting homogenisation costs nothing on the next problem: every assistant
+leaves the culture better off than no AI when it is removed, because the problem changes only 20%.
+
+Reading: rewarding novelty cannot break homogenisation here, for two reasons: the model never finds
+helpful novel answers, and even a model that did would end where any strong helper ends. The lever is
+how much of a person's approach the assistant replaces. Launched (jobs 421178-421183): a `local` reward,
+thumbs only if the answer changes at most 3 bits of the asker's approach ("improve my approach, don't
+replace it"), update temperature 2, seeds 0-5, results/p4b/localT2_s*; compare with thumbs at
+temperature 2. Open: whether diversity matters for anything in this setting (it does not for the next
+problem at shift 0.2); candidates are a larger shift and rho 0.8, where P3 found the costs.

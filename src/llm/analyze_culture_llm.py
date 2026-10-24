@@ -19,14 +19,14 @@ from scipy import stats
 from src.analyze import GRID, INK, mark_panels, plt, save, write_rows
 from src.llm.analyze_p3 import ARM_COLORS
 
-ARMS = ["frozen", "thumbs", "thumbskl", "pcreative", "hcreative", "thumbsT2", "pcreativeT2", "hcreativeT2"]
+ARMS = ["frozen", "thumbs", "thumbskl", "pcreative", "hcreative", "thumbsT2", "pcreativeT2", "hcreativeT2", "localT2"]
 NAMES = {"frozen": "LLM, never updated", "thumbs": "thumbs", "thumbskl": "thumbs + KL",
          "pcreative": "P-creativity", "hcreative": "H-creativity", "thumbsT2": "thumbs, explore", "pcreativeT2": "P-creativity, explore",
-         "hcreativeT2": "H-creativity, explore", "none": "No AI", "pcc": "PCC (oracle full answer)",
+         "hcreativeT2": "H-creativity, explore", "localT2": "edit within 3 bits, explore", "none": "No AI", "pcc": "PCC (oracle full answer)",
          "sbp": "SBP (oracle nudge)"}
 COLORS = {"frozen": "#b8b6ad", "thumbs": ARM_COLORS["thumbs"], "thumbskl": ARM_COLORS["thumbskl"],
           "pcreative": "#eda100", "hcreative": "#1baf7a", "thumbsT2": ARM_COLORS["thumbs"], "pcreativeT2": "#eda100",
-          "hcreativeT2": "#1baf7a", "none": "#898781", "pcc": "#c98500", "sbp": ARM_COLORS["sbp"]}
+          "hcreativeT2": "#1baf7a", "localT2": "#e87ba4", "none": "#898781", "pcc": "#c98500", "sbp": ARM_COLORS["sbp"]}
 
 
 def load(root, rounds=60):
