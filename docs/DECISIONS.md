@@ -783,3 +783,13 @@ update temperature 2; `--edits 3 --leap 0.1 --shift 0.5`, seeds 0-5; mira/vega/g
 Proposed, not run: (a) answer at a higher temperature, to test whether variety alone closes the gap to
 random; (b) show the asker's neighbours instead of the culture's top approaches; (c) several edits per
 request, the team tries each. Design-space page version 3.
+
+### Answering temperature (Harsh, 2026-10-25: "go with (a), run it on grace too")
+
+Does variety alone make the LLM as useful as random proposals? Never-updated model, shift 0.5, seeds 0-5,
+full answers and edits (<=3) at deployment temperature 1.5, 2.0 and 2.5 (1.0 = the interface runs); 36
+jobs on mira/vega/grace, results/p4b_s05/frozen{,E3}D{15,20,25}_s*. Retrained arms wait for this
+result. Sampling uses the full vocabulary (no top-p/top-k); the earlier probe (job 420561) had every
+answer valid up to 2.0, so 2.5 is the top. An invalid answer leaves the team to its own search that
+round, so validity is reported with each arm. Analysis scripts/analysis/p4b_temp.py (vs no AI and vs
+random of the same form, paired by seed).
