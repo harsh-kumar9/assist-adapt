@@ -738,3 +738,48 @@ copying stays at or below no AI and gives at most +3.8% later.
 Reading: mostly small changes plus a few targeted jumps (Miu et al. 2018's tweaks and leaps) dominate. For
 the LLM this suggests edits of at most 3 choices plus occasional full answers rewarded only when helpful and
 new to the culture. Page updated (version 2).
+
+### LLM with edits, and chance baselines (2026-10-25; rho 1, turnover 0.01, shift 0.5)
+
+LLM arms (jobs 421293-421316, results/p4b_s05, 6 seeds) paired with no AI on the same seeds, epochs 3-20.
+Chance baselines added to culture.py (`rnd<k>`: flip a random 1..k choices of the asker's module; `rndfull`:
+random module; blind to the landscape, always answer, kept only if they help; job 421782, 200 seeds,
+results/p4a_cost/shift0.5). Analysis scripts/analysis/p4b_interface.py, figures/p4b_interface,
+results/summary/p4b_interface.csv.
+
+| arm | diversity vs no AI | help while assisted | next problem, AI off (mean 30 rounds) | answers that help | distinct per round |
+|---|---|---|---|---|---|
+| LLM full, never updated | -0.62 | -0.9% | -9.0% | 4.2% | 9% |
+| LLM full, thumbs T2 | -0.92 | -1.1% | -8.9% (p = 0.02) | 6.0% | 5% |
+| LLM edit <=3, never updated | -0.02 | -3.3% | -7.9% | 3.0% | 32% |
+| LLM edit <=3, thumbs T2 | +0.05 | -2.0% | -2.7% | 2.6% | 38% |
+| random edit, 1 choice (200 seeds) | +0.06 | -0.5% | 0.0% | 3.6% | |
+| random edit, 1-3 choices | +0.14 | +15.2% | +4.9% | 4.1% | 87% |
+| random full answer | +0.50 | +19.9% | +6.0% | 4.0% | 98% |
+| PCC | -1.00 | +20.2% | +2.2% | | |
+| reach 3 | -0.01 | +55.3% | +10.9% | | |
+| tweak or leap 3/10% | -0.14 | +61.7% | +12.3% | | |
+
+Help and distinct shares for the random arms from an instrumented rerun of seeds 0-5.
+
+- Edits remove the narrowing: edit minus full, diversity +0.60 (never updated) and +0.98 (thumbs), both
+  p = 0.001. Help while assisted n.s.; next problem +1.1 (n.s.) and +6.2 (p = 0.11).
+- The LLM is worse than guessing at this shift. Same help rate as random proposals, but random gives
+  +15 to +20% while assisted and the LLM about 0: LLM minus random of the same form, -16.2 (p = 0.02) and
+  -16.5 (p = 0.004) for full answers, -15.9 (p = 0.01) and -14.7 (p = 0.03) for edits. Next problem: full
+  answers -9.6 (p = 0.05) and -9.5 (p = 0.01) vs random; edits -5.3 and 0.0, n.s. Where the gap comes from
+  (which teams get helped, gain sizes) is not logged.
+- Thumbs does not raise the help rate over 20 epochs (3-6% throughout, every arm). At shift 0.2 the same
+  LLM gave +8 to +15% while assisted (results/summary/p4b_culture_llm*.csv), mostly by passing on the top
+  approaches; at 0.5 that stops working and it has nothing else.
+- 6-seed LLM next-problem contrasts are noisy (seed spread about +-15%); with 200 seeds PCC is +2.2% on the
+  next problem, the 6-seed subset said -4.4%.
+- Reading: the interface fixes homogenisation, but the culture question is moot while the assistant helps
+  less than a random mutation. The full-answer LLM narrows the culture without helping: almost everyone gets
+  the same answer and the few it helps all move there.
+
+Tweak or leap for the LLM launched as planned (jobs 421766-421777: tlE3 never updated, tlE3T2 thumbs at
+update temperature 2; `--edits 3 --leap 0.1 --shift 0.5`, seeds 0-5; mira/vega/grace).
+Proposed, not run: (a) answer at a higher temperature, to test whether variety alone closes the gap to
+random; (b) show the asker's neighbours instead of the culture's top approaches; (c) several edits per
+request, the team tries each. Design-space page version 3.

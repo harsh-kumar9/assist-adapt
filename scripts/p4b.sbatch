@@ -1,10 +1,9 @@
 #!/bin/bash
-# P4b: LLM assistant retrained once per epoch in a culture with turnover. One GPU on mira or vega.
+# P4b: LLM assistant retrained once per epoch in a culture with turnover. One GPU (mira, vega or grace).
 #   sbatch scripts/p3.sbatch <out dir> <args for src.llm.online...>
 #SBATCH --job-name=p4b
 #SBATCH --partition=ashton
 #SBATCH --qos=ashton
-#SBATCH --exclude=grace
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G

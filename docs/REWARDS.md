@@ -79,5 +79,8 @@ their range helps (the team explores on its own that round).
 | maxh | $\arg\max_{a \in H_i} \min_{c \in C_t} d(a, c)$ | H-creativity |
 | minp | $\arg\min_{a \in H_i} d(a, m_i)$ | closest helpful change |
 | rad$k$ | $\arg\max_{a \in H_i,\ d(a, m_i) \le k} F(a, r_i)$ | local, with reach $k$ |
+| rnd$k$ | $m_i \oplus e$, $e$ a uniformly random set of $j$ choices, $j \sim U\{1..k\}$ | chance for the edit interface |
+| rndfull | uniform over $\{0,1\}^{10}$ | chance for the full answer |
 
-Ties in maxp / maxh / minp go to the larger gain.
+Ties in maxp / maxh / minp go to the larger gain. rnd$k$ and rndfull are blind to the landscape and
+always answer, as the LLM does; the team keeps the answer only if it helps.

@@ -147,8 +147,20 @@ def advise_recombine(codes, fit, F, idx, u, explore, name):
     return out
 
 
+def advise_random(codes, idx, name, rng):
+    """Chance baselines for the LLM interfaces, blind to the landscape. rnd<k>: flip 1..k (uniform)
+    random choices of the asker's module; rndfull: a uniformly random module."""
+    n = len(idx)
+    if name == "rndfull":
+        return (codes[idx] & ~MC) | rng.integers(0, 1 << M, n, dtype=np.int64)
+    k = int(name[3:])
+    order = np.argsort(rng.random((n, M)), 1).astype(np.int64)
+    take = np.arange(M)[None, :] < rng.integers(1, k + 1, n)[:, None]
+    return codes[idx] ^ ((np.int64(1) << order) * take).sum(1)
+
+
 def round_with(codes, F, comm, assistant, use, p_social, rng):
-    if assistant not in ("gated", "rhelp", "maxp", "maxh", "minp") and not assistant.startswith(("rad", "x_", "leap_", "rec_")):
+    if assistant not in ("gated", "rhelp", "maxp", "maxh", "minp") and not assistant.startswith(("rad", "rnd", "x_", "leap_", "rec_")):
         return step(codes, F, comm, assistant, use, p_social, M, rng)
     n = len(codes)
     u_social, u_query, u_ai = rng.random(n), rng.random(n), rng.random(n)
@@ -170,6 +182,8 @@ def round_with(codes, F, comm, assistant, use, p_social, rng):
             prop[idx] = advise_leap(codes, fit, F, idx, u_ai[idx], prop, assistant)
         elif assistant.startswith("rec_"):
             prop[idx] = advise_recombine(codes, fit, F, idx, u_ai[idx], prop, assistant)
+        elif assistant.startswith("rnd"):
+            prop[idx] = advise_random(codes, idx, assistant, rng)
         else:
             prop[idx] = advise_ideal(codes, fit, F, idx, u_ai[idx], prop, assistant)
     return np.where(F[prop] > fit, prop, codes)

@@ -14,6 +14,11 @@ scored by one of these rewards (each is zero unless the answer helps the asker, 
   local      thumbs, but only if the answer changes at most `reach` bits of the asker's approach
              (improve my approach, do not replace it; P4a: reach, not novelty, sets the culture's diversity)
 
+Tweak or leap (`--edits k --leap q`; Miu et al. 2018, the best design in the P4a screen): each request is an
+edit of at most k choices, except that with probability q it asks for a new approach that no listed team
+uses. Edits are scored by `--reward`; leaps earn 1 only if they help, no team holds them, and they change
+more than k choices.
+
 `--kl` adds the usual penalty toward the untrained model. `--edits k` changes the interface: instead of a
 full approach the model names at most k choices to flip in the asker's approach (reach k by design). Between epochs the problem changes and the
 updated model is redeployed. This is the loop of a deployed model retrained on its users' feedback.
@@ -56,6 +61,8 @@ def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3):
         return helped, gain
     if kind == "local":
         return helped * (popcount(sugg ^ (asker & MC)) <= reach), gain
+    if kind == "leap":
+        return helped * (sugg not in culture_mods) * (popcount(sugg ^ (asker & MC)) > reach), gain
     if kind == "pcreative":
         return helped * (1 + lam * popcount(sugg ^ (asker & MC)) / M), gain
     if kind == "hcreative":
@@ -71,6 +78,8 @@ def main():
     ap.add_argument("--reach", type=int, default=3, help="most bits a rewarded answer may change (local)")
     ap.add_argument("--edits", type=int, default=0,
                     help="edit interface: the model names at most this many choices to flip (0 = full answers)")
+    ap.add_argument("--leap", type=float, default=0.0,
+                    help="tweak or leap: share of requests that ask for a new approach instead of an edit")
     ap.add_argument("--kl", type=float, default=0.0)
     ap.add_argument("--model", default="Qwen/Qwen3-4B-Instruct-2507")
     ap.add_argument("--seed", type=int, default=0)
@@ -108,6 +117,7 @@ def main():
     rng = np.random.default_rng([args.seed, 1])
     trng = np.random.default_rng([args.seed, 11])
     urng = np.random.default_rng([args.seed, 12])  # which logged requests go into each update
+    lrng = np.random.default_rng([args.seed, 13])  # which requests ask for a leap
     codes = comm.codes0.copy()
     llm = LLM(types.SimpleNamespace(**{k: getattr(args, k) for k in (
         "model", "device", "lora_r", "lr", "temperature", "max_new_tokens", "micro_batch", "kl")}))
@@ -119,6 +129,8 @@ def main():
         start, codes = st["next_epoch"], np.array(st["codes"], dtype=np.int64)
         comm.spec = np.array(st["spec"], dtype=np.int64)
         rng.bit_generator.state, trng.bit_generator.state, urng.bit_generator.state = st["rng"], st["trng"], st["urng"]
+        if "lrng" in st:
+            lrng.bit_generator.state = st["lrng"]
         llm.load(os.path.join(args.out, "adapter"))
         print(f"resumed at epoch {start}", flush=True)
 
@@ -126,7 +138,7 @@ def main():
     t0 = time.time()
     for e in range(start, args.epochs):
         F = lands[e].F
-        log = []  # requests served this epoch: (asker code, asker fitness, context, culture modules)
+        log = []  # requests served this epoch: (asker code, asker fitness, context, culture modules, leap)
         recs = []
         for t in range(args.rounds):
             n = len(codes)
@@ -142,18 +154,22 @@ def main():
             idx = np.flatnonzero(query)
             ctx = top_context(codes, fit, args.context) if args.context else None
             culture = np.unique(codes & MC)
-            shown, helped = [], []
+            shown, helped, leaps = [], [], []
             if len(idx):
-                _, _, texts = llm.sample([render(codes[i], context=ctx, edits=args.edits) for i in idx], 1,
-                                         seed=args.seed * 100003 + e * 1000 + t)
+                leap = lrng.random(len(idx)) < args.leap if args.leap else np.zeros(len(idx), bool)
+                _, _, texts = llm.sample([render(codes[i], context=ctx, edits=args.edits, leap=bool(lp))
+                                          for i, lp in zip(idx, leap)], 1, seed=args.seed * 100003 + e * 1000 + t)
+                held = set(culture.tolist())
                 for j, i in enumerate(idx):
-                    s = answer(texts[j], codes[i], args.edits)
-                    log.append((int(codes[i]), float(fit[i]), ctx, culture))
+                    s = answer(texts[j], codes[i], 0 if leap[j] else args.edits)
+                    log.append((int(codes[i]), float(fit[i]), ctx, culture, bool(leap[j])))
                     if s is None:
                         continue
                     shown.append(s)
                     cand = (codes[i] & ~MC) | s
                     helped.append(F[cand] > fit[i])
+                    if leap[j]:
+                        leaps.append((F[cand] > fit[i], s not in held))
                     prop[i] = cand
             codes = np.where(F[prop] > fit, prop, codes)
             leave = np.flatnonzero(trng.random(n) < args.mu)
@@ -167,6 +183,10 @@ def main():
                 vals, cnt = np.unique(np.array(shown), return_counts=True)
                 rec.update(valid=len(shown) / len(idx), improve=float(np.mean(helped)),
                            top_share=float(cnt.max() / cnt.sum()), shown_unique=float(len(vals) / len(shown)))
+                if leaps:
+                    lp = np.array(leaps, float)
+                    rec.update(n_leap=len(leaps), leap_improve=float(lp[:, 0].mean()), leap_new=float(lp[:, 1].mean()),
+                               leap_good=float((lp[:, 0] * lp[:, 1]).mean()))
             recs.append(rec)
         # next problem with the assistant removed (cheap CPU probe, as in P1)
         prng = np.random.default_rng([args.seed, 7, e, 1, 0])
@@ -181,14 +201,16 @@ def main():
             R_all, G_all, D_all = [], [], []
             for c0 in range(0, len(pick), args.chunk):
                 batch = [log[k] for k in pick[c0:c0 + args.chunk]]
-                out, P, texts = llm.sample([render(a, context=c, edits=args.edits) for a, _, c, _ in batch], args.G,
+                out, P, texts = llm.sample([render(a, context=c, edits=args.edits, leap=lp) for a, _, c, _, lp in batch],
+                                           args.G,
                                            seed=args.seed * 100003 + e * 1000 + 999 + c0,
                                            temperature=args.update_temperature)
                 R = np.zeros((len(batch), args.G))
-                for bi, (a, fa, _, cult) in enumerate(batch):
+                for bi, (a, fa, _, cult, lp) in enumerate(batch):
                     for j in range(args.G):
-                        R[bi, j], g = reward(args.reward, answer(texts[bi * args.G + j], a, args.edits), a, fa, F, cult, args.lam,
-                                             args.reach)
+                        sugg = answer(texts[bi * args.G + j], a, 0 if lp else args.edits)
+                        R[bi, j], g = reward("leap" if lp else args.reward, sugg, a, fa, F, cult, args.lam,
+                                             args.edits if lp else args.reach)
                         G_all.append(g)
                     D_all.append(len({texts[bi * args.G + j] for j in range(args.G)}))
                 adv = (R - R.mean(1, keepdims=True)) / (R.std(1, keepdims=True) + 1e-4)
@@ -205,7 +227,8 @@ def main():
         if e + 1 in save_epochs:
             llm.model.save_pretrained(os.path.join(args.out, f"adapter_e{e + 1}"))
         json.dump(dict(next_epoch=e + 1, codes=codes.tolist(), spec=comm.spec.tolist(), rng=rng.bit_generator.state,
-                       trng=trng.bit_generator.state, urng=urng.bit_generator.state), open(state_path + ".tmp", "w"))
+                       trng=trng.bit_generator.state, urng=urng.bit_generator.state, lrng=lrng.bit_generator.state),
+                  open(state_path + ".tmp", "w"))
         os.replace(state_path + ".tmp", state_path)
         print(json.dumps(upd), f"{time.time() - t0:.0f}s", flush=True)
     open(os.path.join(args.out, "DONE"), "w").write("ok\n")

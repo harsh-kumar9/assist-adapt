@@ -40,6 +40,9 @@ USER = ("A team's approach is 20 yes/no choices, written as digits (1 = yes).\n"
 EDIT_ASK = ("Suggest up to {k} of choices 1-10 to flip. Reply with their numbers separated by commas "
             "(for example: {example}) and nothing else.")
 FULL_ASK = "Recommend values for choices 1-10. Reply with exactly ten digits and nothing else."
+# tweak or leap: now and then ask for a new approach instead of an edit
+LEAP_ASK = ("Propose new values for choices 1-10 that none of the teams listed above uses. "
+            "Reply with exactly ten digits and nothing else.")
 
 
 STEP_BACK = "\nIf no change would help, repeat the current values and the team will explore on its own."
@@ -65,10 +68,12 @@ def top_context(codes, fit, k, N=20, M=10):
     return out
 
 
-def render(code, N=20, M=10, step_back=False, context=None, edits=0):
+def render(code, N=20, M=10, step_back=False, context=None, edits=0, leap=False):
     bits = [(int(code) >> j) & 1 for j in range(N)]
     text = USER.format(mc="".join(map(str, bits[:M])), rest="".join(map(str, bits[M:])))
-    if edits:
+    if leap:
+        text = text.replace(FULL_ASK, LEAP_ASK)
+    elif edits:
         text = text.replace(FULL_ASK, EDIT_ASK.format(k=edits, example=", ".join(["2", "7", "9"][:edits])))
     if context:
         lines = "".join(f"{i + 1}. {digits(c, 0, M)} | {digits(c, M, N)}, score {f:.2f}\n"

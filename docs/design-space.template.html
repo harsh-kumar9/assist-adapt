@@ -135,6 +135,8 @@ a { color: var(--accent); }
 <tr><td>farthest from the culture</td><td><span class="tex">\arg\max_{a\in H_i}\min_{c\in C_t}d(a,c)</span></td><td>H-creativity</td></tr>
 <tr><td>rarest</td><td><span class="tex">\arg\min_{a\in H_i}n(a)</span>, ties to larger gain</td><td>fitness sharing</td></tr>
 <tr><td>gated</td><td>full answer or nudge, whichever gains more, if either helps; else step back</td><td>P2's learned rule</td></tr>
+<tr><td>random edit</td><td><span class="tex">m_i\oplus e</span>, <span class="tex">e</span> a random set of 1 to <span class="tex">k</span> choices</td><td>chance for the edit interface</td></tr>
+<tr><td>random full answer</td><td>uniform over <span class="tex">\{0,1\}^{10}</span></td><td>chance for the full answer</td></tr>
 </table></div>
 
 <h2>What the runs show</h2>
@@ -234,6 +236,32 @@ a { color: var(--accent); }
 <li><strong>How often teams ask</strong> matters little for small reach; for the strong and the copying assistants, more use means more narrowing.</li>
 </ul>
 
+<h3>The LLM with edits</h3>
+<p>Qwen3-4B at 50% shift, 6 seeds, full answers vs edits of at most 3 choices, never updated or retrained on thumbs each epoch (update samples at temperature 2). To tell whether the LLM's answers are any better than guessing, the references now include assistants that propose at random: a random edit of 1 to 3 choices, or a random full answer. Teams still adopt only what helps them, so a random proposal is a mutation that is kept only if it pays.</p>
+<figure>
+  <img alt="Three panels of horizontal intervals: culture diversity, fitness while assisted, and fitness on the next problem with the AI removed, each as a difference from no AI, for four LLM arms with seed dots and for five reference assistants." src="{{IMG:figures/p4b_interface.png}}">
+  <figcaption>Differences from no AI, epochs 3 to 20. Filled markers: LLM arms, mean and 95% interval over 6 seeds (dots are seeds), paired with no AI on the same seeds. Open squares: reference assistants, 200 seeds. Next problem: mean of the first 30 rounds with the AI removed.</figcaption>
+</figure>
+<div class="frame"><table>
+<tr><th>Shift 50%</th><th class="num">Diversity vs no AI</th><th class="num">Help while assisted</th><th class="num">Next problem, AI off (mean of 30 rounds)</th><th class="num">Answers that help</th><th class="num">Distinct answers per round</th></tr>
+<tr><td>LLM, full answer, never updated</td><td class="num">−0.62</td><td class="num">−1%</td><td class="num">−9.0%</td><td class="num">4.2%</td><td class="num">9%</td></tr>
+<tr><td>LLM, full answer, thumbs</td><td class="num">−0.92</td><td class="num">−1%</td><td class="num">−8.9%</td><td class="num">6.0%</td><td class="num">5%</td></tr>
+<tr><td>LLM, edit (≤3), never updated</td><td class="num">−0.02</td><td class="num">−3%</td><td class="num">−7.9%</td><td class="num">3.0%</td><td class="num">32%</td></tr>
+<tr><td>LLM, edit (≤3), thumbs</td><td class="num">+0.05</td><td class="num">−2%</td><td class="num">−2.7%</td><td class="num">2.6%</td><td class="num">38%</td></tr>
+<tr><td>Random edit, 1 choice</td><td class="num">+0.06</td><td class="num">−0.5%</td><td class="num">0.0%</td><td class="num">3.6%</td><td class="num"></td></tr>
+<tr><td>Random edit, 1 to 3 choices</td><td class="num">+0.14</td><td class="num">+15%</td><td class="num">+4.9%</td><td class="num">4.1%</td><td class="num">87%</td></tr>
+<tr><td>Random full answer</td><td class="num">+0.50</td><td class="num">+20%</td><td class="num">+6.0%</td><td class="num">4.0%</td><td class="num">98%</td></tr>
+<tr><td>Best answer in culture (PCC)</td><td class="num">−1.00</td><td class="num">+20%</td><td class="num">+2.2%</td><td class="num"></td><td class="num"></td></tr>
+<tr><td>Best edit (≤3)</td><td class="num">−0.01</td><td class="num">+55%</td><td class="num">+10.9%</td><td class="num"></td><td class="num"></td></tr>
+<tr><td>Best tweak or leap</td><td class="num">−0.14</td><td class="num">+62%</td><td class="num">+12.3%</td><td class="num"></td><td class="num"></td></tr>
+</table></div>
+<ul>
+<li><strong>Edits remove the narrowing.</strong> With edits the culture stays as diverse as with no AI; with full answers it loses 0.6 to 0.9 (edit minus full, paired: +0.60 never updated, +0.98 with thumbs, both p = 0.001). The full-answer LLM narrows the culture even though it barely helps: it gives almost everyone the same answer, and the few teams it helps all move to it.</li>
+<li><strong>But the LLM is worse than guessing.</strong> Its answers help about as often as random ones (3 to 6%), yet random proposals raise fitness by 15 to 20% while assisted and the LLM's do not (LLM minus random of the same form: −15 to −16 points, p = 0.004 to 0.03). With full answers it also leaves the culture worse on the next problem (−9.5 vs random, p = 0.01 to 0.05). Help rates are similar, so the gap is in which teams get helped and by how much; gain sizes are not logged yet. Its answers are much less varied than random ones (5 to 38% distinct per round vs 87 to 98%).</li>
+<li><strong>Retraining on thumbs does not teach it to help.</strong> The share of answers that help stays at 3 to 6% over 20 epochs in every arm. With half the payoff tables redrawn every epoch, 256 rated requests per epoch are not enough to learn the new problem. At 20% shift the same LLM gave +8 to +15% while assisted, mostly by passing on the culture's best approaches.</li>
+<li>Edit with thumbs vs edit never updated, next problem: +5.3, p = 0.17; with 6 seeds the LLM next-problem contrasts are too noisy to read (seed spread ±15%).</li>
+</ul>
+
 <h2>The design space</h2>
 <p>Five choices make up an assistant. For each option: the rule, where the idea comes from, and how far we have taken it.</p>
 <div class="legend">
@@ -247,10 +275,10 @@ a { color: var(--accent); }
 <div class="frame"><table>
 <tr><th>Option</th><th>Rule</th><th>Grounding</th><th>Status</th></tr>
 <tr><td>Full answer</td><td>any <span class="tex">a\in\{0,1\}^{10}</span></td><td>Copying is social learning; it raises the mean only while others still search <span class="refs">(Rogers 1988; Laland 2004)</span></td><td><span class="chip llm">LLM</span></td></tr>
-<tr><td>Bounded edit</td><td><span class="tex">a=m_i\oplus e,\ |e|\le k</span>: the model names which choices to flip</td><td>Small steps are more often beneficial <span class="refs">(Fisher 1930; Orr 1998)</span>; local search keeps firms in distinct niches <span class="refs">(Levinthal 1997)</span>; give the least help that unblocks the learner <span class="refs">(Wood, Bruner &amp; Ross 1976; Koedinger &amp; Aleven 2007)</span></td><td><span class="chip oracle">oracle</span> <span class="chip run">running</span></td></tr>
+<tr><td>Bounded edit</td><td><span class="tex">a=m_i\oplus e,\ |e|\le k</span>: the model names which choices to flip</td><td>Small steps are more often beneficial <span class="refs">(Fisher 1930; Orr 1998)</span>; local search keeps firms in distinct niches <span class="refs">(Levinthal 1997)</span>; give the least help that unblocks the learner <span class="refs">(Wood, Bruner &amp; Ross 1976; Koedinger &amp; Aleven 2007)</span></td><td><span class="chip oracle">oracle</span> <span class="chip llm">LLM</span> keeps diversity, but helps less than random edits</td></tr>
 <tr><td>Least help that works</td><td><span class="tex">\arg\min_{a\in H_i} d(a,m_i)</span>, capped at <span class="tex">r_{\max}</span></td><td>Assistance dilemma; productive failure <span class="refs">(Koedinger &amp; Aleven 2007; Kapur 2008)</span></td><td><span class="chip oracle">oracle</span> <span class="chip no">less help, no gain</span></td></tr>
 <tr><td>Adaptive reach</td><td><span class="tex">r_i\leftarrow\operatorname{clip}\bigl(r_i\,e^{(s_i-0.2)/0.8},1,r_{\max}\bigr)</span>, <span class="tex">s_i</span> = recent share of answers that helped team <span class="tex">i</span></td><td>Step-size control in evolution strategies, the 1/5 success rule <span class="refs">(Beyer &amp; Schwefel 2002; Hansen &amp; Ostermeier 2001)</span></td><td><span class="chip idea">LLM only</span> the rule assumes random proposals; for an assistant that searches its range, failure calls for a bigger step</td></tr>
-<tr><td>Tweak or leap</td><td>with prob. <span class="tex">1-q</span> an edit of <span class="tex">m_i</span> within <span class="tex">r</span>; with prob. <span class="tex">q</span> a helpful answer new to the culture</td><td>Programming contests improved through many tweaks and rare leaps <span class="refs">(Miu, Gulley, Laland &amp; Rendell 2018)</span></td><td><span class="chip oracle">oracle</span> best so far</td></tr>
+<tr><td>Tweak or leap</td><td>with prob. <span class="tex">1-q</span> an edit of <span class="tex">m_i</span> within <span class="tex">r</span>; with prob. <span class="tex">q</span> a helpful answer new to the culture</td><td>Programming contests improved through many tweaks and rare leaps <span class="refs">(Miu, Gulley, Laland &amp; Rendell 2018)</span></td><td><span class="chip oracle">oracle</span> best so far <span class="chip run">running</span></td></tr>
 <tr><td>Menu of options</td><td><span class="tex">K</span> answers chosen for gain and mutual distance (MMR); the team adopts the one best for it</td><td>A single public signal starts cascades <span class="refs">(Banerjee 1992; Bikhchandani, Hirshleifer &amp; Welch 1992)</span>; diversified lists <span class="refs">(Carbonell &amp; Goldstein 1998; Ziegler et al. 2005)</span></td><td><span class="chip idea">proposed</span></td></tr>
 <tr><td>Recombination</td><td><span class="tex">m_i</span> with a block of <span class="tex">b\le r</span> bits from a donor <span class="tex">c</span>, donor drawn <span class="tex">\propto 1/n(c)</span></td><td>High-impact work is mostly conventional with a few atypical combinations <span class="refs">(Uzzi et al. 2013; Fleming 2001; Weitzman 1998)</span></td><td><span class="chip oracle">oracle</span></td></tr>
 <tr><td>Step back</td><td>no answer; the team explores on its own</td><td>Learn socially, and search yourself when that fails <span class="refs">(Enquist, Eriksson &amp; Ghirlanda 2007)</span>; producers and scroungers <span class="refs">(Barnard &amp; Sibly 1981)</span></td><td><span class="chip llm">LLM</span> P3 <span class="chip oracle">oracle</span></td></tr>
@@ -301,8 +329,9 @@ a { color: var(--accent); }
 
 <h2>Plan</h2>
 <ol>
-<li><strong>Reach through the interface, LLM</strong> <span class="chip run">running</span>. At 50% shift, 6 seeds: full answers vs edits of at most 3 choices, never updated and retrained on thumbs. In the smoke run the edit interface gave 100% valid answers and 4.8 different answers in 8 samples (full answers: 1.2), so the reward has something to compare.</li>
-<li><strong>Tweak or leap for the LLM.</strong> The second screen's best design maps onto the edit interface: edits of at most 3 choices most of the time, and with a small probability a full answer rewarded only if it helps and no team holds it (the H-creativity bonus, now applied only to leaps). Next after the edit-interface runs.</li>
+<li><strong>Reach through the interface, LLM</strong> (done, above). Edits keep the culture as diverse as no AI, but at 50% shift the LLM helps less than random edits.</li>
+<li><strong>Tweak or leap for the LLM</strong> <span class="chip run">running</span>. Edits of at most 3 choices; on 10% of requests a full answer, rewarded only if it helps and no team holds it. 6 seeds, never updated and thumbs.</li>
+<li><strong>Make the LLM at least as useful as guessing.</strong> Candidates: sample at a higher temperature when answering (does variety alone close the gap?), show the asker's neighbours instead of the culture's top approaches, or let the model propose several edits and have the team try each.</li>
 <li><strong>Rewards for the LLM that the screen supports.</strong> Inside the edit interface, thumbs is enough at reach 3. If larger reach is wanted for more help now, add the fitness-sharing reward, the one preference that paid off at reach 5 and 10. A set-level reward over each epoch's answers targets the collapse to one answer directly.</li>
 <li><strong>Separate assistants, done properly.</strong> Groups that match clusters in the network, each with its own retrained model and some data sharing between them. This is the "each company its own model" question.</li>
 </ol>
