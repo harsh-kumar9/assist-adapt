@@ -793,3 +793,30 @@ result. Sampling uses the full vocabulary (no top-p/top-k); the earlier probe (j
 answer valid up to 2.0, so 2.5 is the top. An invalid answer leaves the team to its own search that
 round, so validity is reported with each arm. Analysis scripts/analysis/p4b_temp.py (vs no AI and vs
 random of the same form, paired by seed).
+
+### Tweak or leap and answering temperature, results (2026-10-25; shift 0.5, 6 seeds, epochs 3-20)
+
+Tweak or leap (jobs 421766-421777): edits <=3 plus a full answer on 10% of requests. Never updated:
+diversity +0.08 vs no AI, help while assisted -0.5%, next problem -0.1%; thumbs T2: +0.18, -1.1%, -7.4%.
+Vs random edits: -13.1 (p = 0.008) and -13.8 (p = 0.02) while assisted. Only ~3% of leaps help and are new
+to the culture. At temperature 1 it is plain edits again.
+
+Answering temperature (never updated; results/summary/p4b_temp.csv, figures/p4b_temp):
+
+| T | edit: help / next / distinct | full: help / next / distinct |
+|---|---|---|
+| 1.0 | -3.2% / -7.9% / 0.32 | -0.9% / -9.0% / 0.09 |
+| 1.5 | +2.9% / -4.2% / 0.39 | +2.5% / -6.8% / 0.10 |
+| 2.0 | +6.3% / +0.7% / 0.46 | +2.3% / -6.5% / 0.13 |
+| 2.5 | +8.2% / +1.3% / 0.55 | +6.5% / -3.8% / 0.15 |
+| random | +15.2% / +4.9% / 0.87 | +19.9% / +6.0% / 0.98 |
+
+Valid >= 0.98 everywhere. Edits, T 2.5 minus 1.0 paired: +11.5 while assisted (p = 0.03), +9.2 next problem
+(p = 0.04); slopes +7.6 and +6.5 per unit T (p = 0.048, 0.046). Gap to random edits at 2.5: -4.4 and +3.9,
+n.s. Diversity stays at the no-AI level. Full answers: distinct rises only to 0.15, diversity -0.5 vs no AI,
++7.5 while assisted at 2.5 (p = 0.11). The help share barely moves (edits 0.030 -> 0.037): more directions,
+not more help per answer.
+Reading: with edits and enough answer variety the LLM keeps the culture as diverse as no AI and helps about
+as much as random edits. Still far from the oracle edit (+55%).
+Proposed next (not run): retraining on the varied stream, answering at 2.5: thumbs with edits, tweak or leap
+never updated and thumbs; 18 jobs. Design-space page version 4.

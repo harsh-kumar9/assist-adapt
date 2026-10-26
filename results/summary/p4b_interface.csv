@@ -1,12 +1,14 @@
-arm,name,n,div,improve,uniq,fit_vs_none,next_vs_none
-frozen,Full answer, never updated,6,2.332,0.04148,0.09479,-0.9047,-8.979
-thumbsT2,Full answer, thumbs,6,2.03,0.05955,0.0466,-1.144,-8.874
-frozenE3,Edit (≤3), never updated,6,2.933,0.02954,0.3153,-3.248,-7.932
-thumbsE3T2,Edit (≤3), thumbs,6,3.005,0.0261,0.3809,-1.999,-2.672
-oracle_none,none,6,2.951,nan,nan,0,0
-oracle_pcc,pcc,6,1.866,nan,nan,17.54,-4.404
-oracle_rad3,rad3,6,2.743,nan,nan,53.8,6.078
-oracle_leap_3_10,leap_3_10,6,2.75,nan,nan,58.42,11.93
-oracle_rnd1,rnd1,6,2.959,nan,nan,-5.279,-7.202
-oracle_rnd3,rnd3,6,2.974,nan,nan,12.65,-2.651
-oracle_rndfull,rndfull,6,3.444,nan,nan,15.32,0.6025
+arm,name,n,div,improve,uniq,fit_vs_none,next_vs_none,leap_good
+frozen,Full answer, never updated,6,2.332,0.04148,0.09479,-0.9047,-8.979,nan
+thumbsT2,Full answer, thumbs,6,2.03,0.05955,0.0466,-1.144,-8.874,nan
+frozenE3,Edit (≤3), never updated,6,2.933,0.02954,0.3153,-3.248,-7.932,nan
+thumbsE3T2,Edit (≤3), thumbs,6,3.005,0.0261,0.3809,-1.999,-2.672,nan
+tlE3,Tweak or leap, never updated,6,3.027,0.0309,0.3569,-0.4868,-0.1261,0.03227
+tlE3T2,Tweak or leap, thumbs,6,3.132,0.03416,0.5333,-1.117,-7.427,0.0296
+oracle_none,none,6,2.951,nan,nan,0,0,nan
+oracle_pcc,pcc,6,1.866,nan,nan,17.54,-4.404,nan
+oracle_rad3,rad3,6,2.743,nan,nan,53.8,6.078,nan
+oracle_leap_3_10,leap_3_10,6,2.75,nan,nan,58.42,11.93,nan
+oracle_rnd1,rnd1,6,2.959,nan,nan,-5.279,-7.202,nan
+oracle_rnd3,rnd3,6,2.974,nan,nan,12.65,-2.651,nan
+oracle_rndfull,rndfull,6,3.444,nan,nan,15.32,0.6025,nan
