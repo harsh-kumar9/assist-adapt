@@ -897,3 +897,12 @@ New logging (all runs from now): edit_size per round; group_any (groups with a h
 group_multi (groups with >= 2 distinct helpful answers) per epoch; requests.jsonl with every request's round,
 team slot, asker code, answer and helped, to count repeat answers to the same team. Fake-LLM CPU test: groups
 with any signal 25% thumbs, 81% dup, ~100% crowd and rate.
+
+### Correction: groups with two different helpful answers (2026-10-28)
+
+The ~2% in the entry above was an estimate. First epoch of the new runs (untrained model, update samples at
+T 2): groups with any helpful answer 0.105 / 0.254 (dupE3T2 s0 / s1) and 0.113 / 0.098 (crowdT2 s0 / s1);
+groups with two different helpful answers 0.059 / 0.098 and 0.059 / 0.023. Help clusters in a few easy
+askers, so 2-10% of groups, not ~2%. The rule stands (75-90% of groups give thumbs no signal; rescaling
+rewards act only in the multi-helpful groups), but "spread's +6.6 is most likely noise" was too strong: it is
+open. Not adding spread seeds unless asked. Page updated (version 7).
