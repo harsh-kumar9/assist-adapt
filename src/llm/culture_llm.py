@@ -13,6 +13,17 @@ scored by one of these rewards (each is zero unless the answer helps the asker, 
   hcreative  thumbs x (1 + lam * distance from the nearest approach anyone holds / M): new to the culture
   local      thumbs, but only if the answer changes at most `reach` bits of the asker's approach
              (improve my approach, do not replace it; P4a: reach, not novelty, sets the culture's diversity)
+  spread     thumbs / (1 + other askers this epoch who adopted the same module from the assistant)
+
+GRPO standardises rewards within each group of G answers, so a reward that only rescales thumbs changes
+nothing in a group with one helpful answer, and with ~3% of answers helping most groups have none. The
+next three also score answers that do not help (an invalid answer scores below any valid one):
+
+  dup        thumbs - beta * (copies of this answer in the group - 1) / (G - 1): credit shared among
+             identical answers (implicit fitness sharing; Smith, Forrest & Perelson 1993; Li et al. 2025)
+  crowd      thumbs - lam * share of this epoch's askers whose module is within `radius` flips of the answer
+             (fitness sharing with a radius; Goldberg & Richardson 1987)
+  rate       10 * (F(answer) - F(asker)), signed: how much better or worse the team found it
 
 Tweak or leap (`--edits k --leap q`; Miu et al. 2018, the best design in the P4a screen): each request is an
 edit of at most k choices, except that with probability q it asks for a new approach that no listed team
@@ -50,16 +61,24 @@ def answer(text, asker, edits):
     return None if mask is None else (int(asker) & int(MC)) ^ mask
 
 
-def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3, crowd=None, own=None):
+INVALID = {"dup": -1.0, "rate": -10.0}  # crowd: -1 - lam. dup subtracts its group penalty on top
+
+
+def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3, crowd=None, own=None, share=None):
     """Returns (reward, gain). sugg is a module int or None. spread: crowd counts the modules that askers
-    adopted from the assistant this epoch, own is the module this asker adopted (None if none)."""
+    adopted from the assistant this epoch, own is the module this asker adopted (None if none). crowd:
+    share[x] is the share of this epoch's askers within `radius` flips of module x."""
     if sugg is None:
-        return 0.0, 0.0
+        return (-1.0 - lam if kind == "crowd" else INVALID.get(kind, 0.0)), 0.0
     new = (asker & ~MC) | sugg
     gain = max(0.0, float(F[new] - fit_asker)) * 10
     helped = 1.0 if gain > 0 else 0.0
-    if kind == "thumbs":
+    if kind in ("thumbs", "dup"):
         return helped, gain
+    if kind == "rate":
+        return float(F[new] - fit_asker) * 10, gain
+    if kind == "crowd":
+        return helped - lam * float(share[sugg]), gain
     if kind == "spread":
         return helped / (1 + crowd.get(sugg, 0) - (sugg == own)), gain
     if kind == "local":
@@ -76,8 +95,11 @@ def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3, crowd=No
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--reward", default="thumbs", choices=["frozen", "thumbs", "spread", "pcreative", "hcreative", "local"])
-    ap.add_argument("--lam", type=float, default=1.0, help="novelty bonus weight")
+    ap.add_argument("--reward", default="thumbs",
+                    choices=["frozen", "thumbs", "spread", "dup", "crowd", "rate", "pcreative", "hcreative", "local"])
+    ap.add_argument("--lam", type=float, default=1.0, help="novelty bonus weight; crowding penalty weight (crowd)")
+    ap.add_argument("--beta", type=float, default=0.5, help="duplicate penalty weight (dup)")
+    ap.add_argument("--radius", type=int, default=2, help="crowding radius in flips (crowd)")
     ap.add_argument("--reach", type=int, default=3, help="most bits a rewarded answer may change (local)")
     ap.add_argument("--edits", type=int, default=0,
                     help="edit interface: the model names at most this many choices to flip (0 = full answers)")
@@ -145,6 +167,7 @@ def main():
         F = lands[e].F
         log = []  # requests served this epoch: (asker code, asker fitness, context, culture modules, leap, adopted module)
         crowd = {}  # module -> askers who adopted it from the assistant this epoch
+        reqs = []  # every request served: round, team slot, asker code, answer shown (-1 if none), helped
         recs = []
         for t in range(args.rounds):
             n = len(codes)
@@ -160,7 +183,7 @@ def main():
             idx = np.flatnonzero(query)
             ctx = top_context(codes, fit, args.context) if args.context else None
             culture = np.unique(codes & MC)
-            shown, helped, leaps, menu_distinct = [], [], [], []
+            shown, sizes, helped, leaps, menu_distinct = [], [], [], [], []
             if len(idx):
                 leap = lrng.random(len(idx)) < args.leap if args.leap else np.zeros(len(idx), bool)
                 _, _, texts = llm.sample([render(codes[i], context=ctx, edits=args.edits, leap=bool(lp))
@@ -174,11 +197,13 @@ def main():
                     cand = None if s is None else (codes[i] & ~MC) | s
                     good = s is not None and F[cand] > fit[i]
                     log.append((int(codes[i]), float(fit[i]), ctx, culture, bool(leap[j]), int(s) if good else None))
+                    reqs.append((t, int(i), int(codes[i]), -1 if s is None else int(s), int(good)))
                     if s is None:
                         continue
                     if good:
                         crowd[int(s)] = crowd.get(int(s), 0) + 1
                     shown.append(s)
+                    sizes.append(popcount(s ^ (int(codes[i]) & int(MC))))
                     helped.append(good)
                     if leap[j]:
                         leaps.append((good, s not in held))
@@ -194,7 +219,8 @@ def main():
             if shown:
                 vals, cnt = np.unique(np.array(shown), return_counts=True)
                 rec.update(valid=len(shown) / len(idx), improve=float(np.mean(helped)),
-                           top_share=float(cnt.max() / cnt.sum()), shown_unique=float(len(vals) / len(shown)))
+                           top_share=float(cnt.max() / cnt.sum()), shown_unique=float(len(vals) / len(shown)),
+                           edit_size=float(np.mean(sizes)))
                 if args.menu > 1:
                     rec.update(menu_distinct=float(np.mean(menu_distinct)))
                 if leaps:
@@ -212,7 +238,12 @@ def main():
         upd = dict(epoch=e, next_off=float(np.mean(vals)), served=len(log))
         if args.reward != "frozen" and log:
             pick = urng.choice(len(log), min(args.update_prompts, len(log)), replace=False)
-            R_all, G_all, D_all = [], [], []
+            R_all, G_all, D_all, H_all = [], [], [], []  # H_all: (helpful answers, distinct helpful) per group
+            share = None
+            if args.reward == "crowd":
+                hist = np.bincount([a & int(MC) for a, *_ in log], minlength=1 << M)
+                ball = [m for m in range(1 << M) if popcount(m) <= args.radius]
+                share = sum(hist[np.arange(1 << M) ^ m] for m in ball) / len(log)
             for c0 in range(0, len(pick), args.chunk):
                 batch = [log[k] for k in pick[c0:c0 + args.chunk]]
                 out, P, texts = llm.sample([render(a, context=c, edits=args.edits, leap=lp) for a, _, c, _, lp, _ in batch],
@@ -221,22 +252,34 @@ def main():
                                            temperature=args.update_temperature)
                 R = np.zeros((len(batch), args.G))
                 for bi, (a, fa, _, cult, lp, own) in enumerate(batch):
-                    for j in range(args.G):
-                        sugg = answer(texts[bi * args.G + j], a, 0 if lp else args.edits)
+                    suggs = [answer(texts[bi * args.G + j], a, 0 if lp else args.edits) for j in range(args.G)]
+                    good = set()
+                    for j, sugg in enumerate(suggs):
                         R[bi, j], g = reward("leap" if lp else args.reward, sugg, a, fa, F, cult, args.lam,
-                                             args.edits if lp else args.reach, crowd, own)
+                                             args.edits if lp else args.reach, crowd, own, share)
                         G_all.append(g)
+                        if g > 0:
+                            good.add(sugg)
+                    if args.reward == "dup" and not lp:
+                        n = {s: suggs.count(s) for s in set(suggs) if s is not None}
+                        R[bi] -= args.beta * np.array([1.0 if s is None else (n[s] - 1) / (args.G - 1) for s in suggs])
                     D_all.append(len({texts[bi * args.G + j] for j in range(args.G)}))
+                    H_all.append((sum(s in good for s in suggs), len(good)))
                 adv = (R - R.mean(1, keepdims=True)) / (R.std(1, keepdims=True) + 1e-4)
                 stats = llm.update(out, P, adv.reshape(-1))
                 R_all.append(R.mean())
+            h = np.array(H_all, float)
             upd.update(reward=float(np.mean(R_all)), gain=float(np.mean(G_all)), group_distinct=float(np.mean(D_all)),
+                       group_any=float((h[:, 0] > 0).mean()), group_multi=float((h[:, 1] > 1).mean()),
                        kl=stats["kl"])
         with open(os.path.join(args.out, "rounds.jsonl"), "a") as f:
             for r in recs:
                 f.write(json.dumps(r) + "\n")
         with open(os.path.join(args.out, "epochs.jsonl"), "a") as f:
             f.write(json.dumps(upd) + "\n")
+        cols = dict(zip(("t", "slot", "code", "answer", "helped"), map(list, zip(*reqs)))) if reqs else {}
+        with open(os.path.join(args.out, "requests.jsonl"), "a") as f:
+            f.write(json.dumps(dict(epoch=e, **cols)) + "\n")
         llm.save(os.path.join(args.out, "adapter"))
         if e + 1 in save_epochs:
             llm.model.save_pretrained(os.path.join(args.out, f"adapter_e{e + 1}"))

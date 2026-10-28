@@ -871,3 +871,29 @@ Reading: neither keeps up with random proposals of the same form while assisted.
 diverse as no AI (the edit form does that, not the reward). Spread is the best trained arm so far, but the
 gain over thumbs is not significant at 6 seeds. On these 6 seeds random edits are weaker than on 200
 (+12.6% / -2.7% vs +15.2% / +4.9%), so next-problem numbers near zero are within seed noise.
+
+### Rewards that score unhelpful answers (Harsh, 2026-10-28: "can we brainstorm the reward design more and then run more trained versions?"; plan ratified: "yes go ahead")
+
+Why the rewards so far changed nothing: GRPO z-scores rewards within each group of G = 8 answers to one request.
+With ~3% of answers helping, about 4 in 5 groups have no helpful answer (no signal under thumbs), and in a group
+with one helpful answer any reward that only rescales it (spread, P/H-creativity, gain) gives exactly the thumbs
+update. They differ only in groups with two different helpful answers (~2%, estimated). So spread was nearly
+thumbs; its +6.6 is most likely noise, and the "more spread seeds" proposal is dropped. Design rule: a reward
+must separate answers thumbs scores the same, mostly the unhelpful ones. Brainstorm (GA niching, ecology,
+economics, education, LLM RL) in the 2026-10-28 conversation and on the design-space page.
+
+Round 1, four arms, seeds 0-5, shift 0.5, update samples at T 2, deployment T 1; invalid answers score below
+any valid one (else junk dodges the penalties):
+- dupE3T2 (edits <=3): thumbs - 0.5 * (copies of the answer in the group - 1) / 7. Implicit fitness sharing
+  (Smith, Forrest & Perelson 1993; Rosin & Belew 1997); DARLING (Li et al. 2025). Can training buy the
+  variety T 2.5 gave? Jobs 426458-426468 even.
+- crowdT2 (full answers): thumbs - 1.0 * share of this epoch's askers within 2 flips of the answer. Fitness
+  sharing with a radius (Goldberg & Richardson 1987); congestion pricing (Vickrey 1969); Kitcher 1990. Does
+  paying for crowding stop the narrowing where it happens (thumbs full: -0.92)? Jobs 426459-426469 odd.
+- rateE3T2 (edits): signed rating 10 * (F(x') - F(m)). Is sparse feedback the problem? Watch edit size (risk:
+  1-flip edits lose least). After reading round 1.
+- dupT2 (full answers): duplicate penalty. After reading round 1.
+New logging (all runs from now): edit_size per round; group_any (groups with a helpful answer) and
+group_multi (groups with >= 2 distinct helpful answers) per epoch; requests.jsonl with every request's round,
+team slot, asker code, answer and helped, to count repeat answers to the same team. Fake-LLM CPU test: groups
+with any signal 25% thumbs, 81% dup, ~100% crowd and rate.
