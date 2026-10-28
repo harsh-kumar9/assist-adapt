@@ -834,3 +834,9 @@ shift 0.5, seeds 0-5 (results/p4b_s05):
   assistant (delta = 0, counted over the epoch's served requests). Update samples at temperature 2,
   deployment 1 (spreadE3T2, jobs 426343-426353 odd); compare with thumbs (thumbsE3T2), same settings.
 Fake-LLM CPU test of both paths passed; rnd3 reproduces the stored P4a baseline exactly.
+
+### Gemma replication dropped (Harsh, 2026-10-28: "we also have some blocked jobs related to this project which we can drop")
+
+Cancelled the 16 held P3 Gemma-3-4B jobs (420489-420504: thumbs and pairwise --prefer-valid, seeds 4-11,
+results/p3g). Seeds 0-3 of both arms finished and stay in results/p3g; the seed 4-11 dirs hold only the
+frozen code copy, so the runs can be resubmitted with scripts/p3_submit.sh if the replication comes back.
