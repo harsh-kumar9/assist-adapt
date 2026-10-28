@@ -50,8 +50,9 @@ def answer(text, asker, edits):
     return None if mask is None else (int(asker) & int(MC)) ^ mask
 
 
-def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3):
-    """Returns (reward, gain). sugg is a module int or None."""
+def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3, crowd=None, own=None):
+    """Returns (reward, gain). sugg is a module int or None. spread: crowd counts the modules that askers
+    adopted from the assistant this epoch, own is the module this asker adopted (None if none)."""
     if sugg is None:
         return 0.0, 0.0
     new = (asker & ~MC) | sugg
@@ -59,6 +60,8 @@ def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3):
     helped = 1.0 if gain > 0 else 0.0
     if kind == "thumbs":
         return helped, gain
+    if kind == "spread":
+        return helped / (1 + crowd.get(sugg, 0) - (sugg == own)), gain
     if kind == "local":
         return helped * (popcount(sugg ^ (asker & MC)) <= reach), gain
     if kind == "leap":
@@ -73,13 +76,15 @@ def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--reward", default="thumbs", choices=["frozen", "thumbs", "pcreative", "hcreative", "local"])
+    ap.add_argument("--reward", default="thumbs", choices=["frozen", "thumbs", "spread", "pcreative", "hcreative", "local"])
     ap.add_argument("--lam", type=float, default=1.0, help="novelty bonus weight")
     ap.add_argument("--reach", type=int, default=3, help="most bits a rewarded answer may change (local)")
     ap.add_argument("--edits", type=int, default=0,
                     help="edit interface: the model names at most this many choices to flip (0 = full answers)")
     ap.add_argument("--leap", type=float, default=0.0,
                     help="tweak or leap: share of requests that ask for a new approach instead of an edit")
+    ap.add_argument("--menu", type=int, default=1,
+                    help="answers per request; the team tries each and keeps the best that helps")
     ap.add_argument("--kl", type=float, default=0.0)
     ap.add_argument("--model", default="Qwen/Qwen3-4B-Instruct-2507")
     ap.add_argument("--seed", type=int, default=0)
@@ -138,7 +143,8 @@ def main():
     t0 = time.time()
     for e in range(start, args.epochs):
         F = lands[e].F
-        log = []  # requests served this epoch: (asker code, asker fitness, context, culture modules, leap)
+        log = []  # requests served this epoch: (asker code, asker fitness, context, culture modules, leap, adopted module)
+        crowd = {}  # module -> askers who adopted it from the assistant this epoch
         recs = []
         for t in range(args.rounds):
             n = len(codes)
@@ -154,22 +160,28 @@ def main():
             idx = np.flatnonzero(query)
             ctx = top_context(codes, fit, args.context) if args.context else None
             culture = np.unique(codes & MC)
-            shown, helped, leaps = [], [], []
+            shown, helped, leaps, menu_distinct = [], [], [], []
             if len(idx):
                 leap = lrng.random(len(idx)) < args.leap if args.leap else np.zeros(len(idx), bool)
                 _, _, texts = llm.sample([render(codes[i], context=ctx, edits=args.edits, leap=bool(lp))
-                                          for i, lp in zip(idx, leap)], 1, seed=args.seed * 100003 + e * 1000 + t)
+                                          for i, lp in zip(idx, leap)], args.menu, seed=args.seed * 100003 + e * 1000 + t)
                 held = set(culture.tolist())
                 for j, i in enumerate(idx):
-                    s = answer(texts[j], codes[i], 0 if leap[j] else args.edits)
-                    log.append((int(codes[i]), float(fit[i]), ctx, culture, bool(leap[j])))
+                    opts = [answer(texts[j * args.menu + c], codes[i], 0 if leap[j] else args.edits) for c in range(args.menu)]
+                    opts = [o for o in opts if o is not None]
+                    menu_distinct.append(len(set(opts)))
+                    s = max(opts, key=lambda o: F[(codes[i] & ~MC) | o]) if opts else None  # the team tries each
+                    cand = None if s is None else (codes[i] & ~MC) | s
+                    good = s is not None and F[cand] > fit[i]
+                    log.append((int(codes[i]), float(fit[i]), ctx, culture, bool(leap[j]), int(s) if good else None))
                     if s is None:
                         continue
+                    if good:
+                        crowd[int(s)] = crowd.get(int(s), 0) + 1
                     shown.append(s)
-                    cand = (codes[i] & ~MC) | s
-                    helped.append(F[cand] > fit[i])
+                    helped.append(good)
                     if leap[j]:
-                        leaps.append((F[cand] > fit[i], s not in held))
+                        leaps.append((good, s not in held))
                     prop[i] = cand
             codes = np.where(F[prop] > fit, prop, codes)
             leave = np.flatnonzero(trng.random(n) < args.mu)
@@ -183,6 +195,8 @@ def main():
                 vals, cnt = np.unique(np.array(shown), return_counts=True)
                 rec.update(valid=len(shown) / len(idx), improve=float(np.mean(helped)),
                            top_share=float(cnt.max() / cnt.sum()), shown_unique=float(len(vals) / len(shown)))
+                if args.menu > 1:
+                    rec.update(menu_distinct=float(np.mean(menu_distinct)))
                 if leaps:
                     lp = np.array(leaps, float)
                     rec.update(n_leap=len(leaps), leap_improve=float(lp[:, 0].mean()), leap_new=float(lp[:, 1].mean()),
@@ -201,16 +215,16 @@ def main():
             R_all, G_all, D_all = [], [], []
             for c0 in range(0, len(pick), args.chunk):
                 batch = [log[k] for k in pick[c0:c0 + args.chunk]]
-                out, P, texts = llm.sample([render(a, context=c, edits=args.edits, leap=lp) for a, _, c, _, lp in batch],
+                out, P, texts = llm.sample([render(a, context=c, edits=args.edits, leap=lp) for a, _, c, _, lp, _ in batch],
                                            args.G,
                                            seed=args.seed * 100003 + e * 1000 + 999 + c0,
                                            temperature=args.update_temperature)
                 R = np.zeros((len(batch), args.G))
-                for bi, (a, fa, _, cult, lp) in enumerate(batch):
+                for bi, (a, fa, _, cult, lp, own) in enumerate(batch):
                     for j in range(args.G):
                         sugg = answer(texts[bi * args.G + j], a, 0 if lp else args.edits)
                         R[bi, j], g = reward("leap" if lp else args.reward, sugg, a, fa, F, cult, args.lam,
-                                             args.edits if lp else args.reach)
+                                             args.edits if lp else args.reach, crowd, own)
                         G_all.append(g)
                     D_all.append(len({texts[bi * args.G + j] for j in range(args.G)}))
                 adv = (R - R.mean(1, keepdims=True)) / (R.std(1, keepdims=True) + 1e-4)

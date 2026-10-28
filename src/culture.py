@@ -147,16 +147,21 @@ def advise_recombine(codes, fit, F, idx, u, explore, name):
     return out
 
 
-def advise_random(codes, idx, name, rng):
+def advise_random(codes, F, idx, name, rng):
     """Chance baselines for the LLM interfaces, blind to the landscape. rnd<k>: flip 1..k (uniform)
-    random choices of the asker's module; rndfull: a uniformly random module."""
+    random choices of the asker's module; rndfull: a uniformly random module. rnd<k>x<K>: K such edits,
+    the team tries each and keeps the best (menu)."""
     n = len(idx)
     if name == "rndfull":
         return (codes[idx] & ~MC) | rng.integers(0, 1 << M, n, dtype=np.int64)
-    k = int(name[3:])
-    order = np.argsort(rng.random((n, M)), 1).astype(np.int64)
-    take = np.arange(M)[None, :] < rng.integers(1, k + 1, n)[:, None]
-    return codes[idx] ^ ((np.int64(1) << order) * take).sum(1)
+    k, K = (int(x) for x in (name[3:] + "x1").split("x")[:2])
+    best = None
+    for _ in range(K):
+        order = np.argsort(rng.random((n, M)), 1).astype(np.int64)
+        take = np.arange(M)[None, :] < rng.integers(1, k + 1, n)[:, None]
+        cand = codes[idx] ^ ((np.int64(1) << order) * take).sum(1)
+        best = cand if best is None else np.where(F[cand] > F[best], cand, best)
+    return best
 
 
 def round_with(codes, F, comm, assistant, use, p_social, rng):
@@ -183,7 +188,7 @@ def round_with(codes, F, comm, assistant, use, p_social, rng):
         elif assistant.startswith("rec_"):
             prop[idx] = advise_recombine(codes, fit, F, idx, u_ai[idx], prop, assistant)
         elif assistant.startswith("rnd"):
-            prop[idx] = advise_random(codes, idx, assistant, rng)
+            prop[idx] = advise_random(codes, F, idx, assistant, rng)
         else:
             prop[idx] = advise_ideal(codes, fit, F, idx, u_ai[idx], prop, assistant)
     return np.where(F[prop] > fit, prop, codes)

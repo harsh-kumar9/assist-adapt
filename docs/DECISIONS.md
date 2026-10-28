@@ -820,3 +820,17 @@ Reading: with edits and enough answer variety the LLM keeps the culture as diver
 as much as random edits. Still far from the oracle edit (+55%).
 Proposed next (not run): retraining on the varied stream, answering at 2.5: thumbs with edits, tweak or leap
 never updated and thumbs; 18 jobs. Design-space page version 4.
+
+### Practical variety: menu and spread reward (Harsh, 2026-10-26: "temp 2.5 is not really practical";
+### 2026-10-28: "a and b sounds good")
+
+Temperature 2-2.5 is a diagnosis (the LLM falls short of random because it gives nearly the same answer to
+everyone), not a design. Two practical ways to get the variety at deployment temperature 1, edits (<=3),
+shift 0.5, seeds 0-5 (results/p4b_s05):
+- (a) Menu: `--menu 3`, three answers per request at temperature 1; the team tries each and keeps the best
+  that helps. Never updated (frozenE3M3, jobs 426342-426352 even). Fair reference: random menu `rnd3x3`
+  (three random 1-3 flip edits, best kept; job 426341, 200 seeds).
+- (b) Spread reward: R = h / (1 + m), m = other askers this epoch who adopted the same module from the
+  assistant (delta = 0, counted over the epoch's served requests). Update samples at temperature 2,
+  deployment 1 (spreadE3T2, jobs 426343-426353 odd); compare with thumbs (thumbsE3T2), same settings.
+Fake-LLM CPU test of both paths passed; rnd3 reproduces the stored P4a baseline exactly.

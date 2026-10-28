@@ -21,12 +21,13 @@ from src.analyze import GRID, INK, mark_panels, plt, save, write_rows  # noqa: E
 ROOT, ROUNDS, BURN = "results/p4b_s05", 60, 2
 ARMS = [("frozen", "Full answer, never updated", "#b8b6ad", "--"), ("thumbsT2", "Full answer, thumbs", "#4a3aa7", "--"),
         ("frozenE3", "Edit (≤3), never updated", "#7fd1b0", "-"), ("thumbsE3T2", "Edit (≤3), thumbs", "#0f7a52", "-"),
-        ("tlE3", "Tweak or leap, never updated", "#f2c46b", "-"), ("tlE3T2", "Tweak or leap, thumbs", "#c98500", "-")]
+        ("tlE3", "Tweak or leap, never updated", "#f2c46b", "-"), ("tlE3T2", "Tweak or leap, thumbs", "#c98500", "-"),
+        ("frozenE3M3", "Edit, best of 3, never updated", "#e66b8f", "-"), ("spreadE3T2", "Edit, spread reward", "#3b8fd6", "-")]
 ORACLES = [("results/p4a_cost/shift0.5", "none"), ("results/p4a_cost/shift0.5", "pcc"),
            ("results/p4a_cost/shift0.5", "rad3"), ("results/p4a_grid/shift0.5", "leap_3_10"),
            ("results/p4a_cost/shift0.5", "rnd1"), ("results/p4a_cost/shift0.5", "rnd3"),
-           ("results/p4a_cost/shift0.5", "rndfull")]
-REFS = [("rnd3", "Random edit (1-3 flips)"), ("rndfull", "Random full answer"), ("pcc", "Best answer in culture"),
+           ("results/p4a_cost/shift0.5", "rndfull"), ("results/p4a_cost/shift0.5", "rnd3x3")]
+REFS = [("rnd3", "Random edit (1-3 flips)"), ("rnd3x3", "Random edit, best of 3"), ("rndfull", "Random full answer"), ("pcc", "Best answer in culture"),
         ("rad3", "Best edit (≤3)"), ("leap_3_10", "Best tweak or leap")]
 
 
@@ -45,7 +46,7 @@ for a, *_ in ARMS:
     for d in sorted(glob.glob(os.path.join(ROOT, f"{a}_s*"))):
         if os.path.exists(os.path.join(d, "DONE")):
             runs.setdefault(a, {})[int(d.rsplit("_s", 1)[1])] = load_run(d)
-arms = [x for x in ARMS if x[0] in runs]
+arms = [x for x in ARMS if x[0] in runs and len(runs[x[0]]) >= 6]
 seeds = sorted(set.intersection(*[set(runs[a]) for a, *_ in arms]))
 print(f"{len(seeds)} seeds with all of: {', '.join(a for a, *_ in arms)}")
 orc, full = {}, {}
@@ -90,8 +91,10 @@ print("\npaired contrasts (seeds paired; diversity in Hamming units, fitness in 
 for a, b in [("frozenE3", "frozen"), ("thumbsE3T2", "thumbsT2"), ("thumbsE3T2", "frozenE3"), ("thumbsT2", "frozen"),
              ("tlE3", "frozenE3"), ("tlE3T2", "thumbsE3T2"), ("tlE3T2", "tlE3"),
              ("frozen", "rndfull"), ("thumbsT2", "rndfull"), ("frozenE3", "rnd3"), ("thumbsE3T2", "rnd3"),
-             ("tlE3", "rnd3"), ("tlE3T2", "rnd3")]:
-    if a not in runs or not (b in runs or b in orc):
+             ("tlE3", "rnd3"), ("tlE3T2", "rnd3"), ("frozenE3M3", "frozenE3"), ("frozenE3M3", "rnd3x3"),
+             ("spreadE3T2", "thumbsE3T2"), ("spreadE3T2", "frozenE3"), ("spreadE3T2", "rnd3")]:
+    done = [x[0] for x in arms]
+    if a not in done or not (b in done or b in orc):
         continue
     out = []
     for k in ("div", "fit", "next_off"):
