@@ -846,3 +846,28 @@ frozen code copy, so the runs can be resubmitted with scripts/p3_submit.sh if th
 Every scripts/*.sbatch now has `--nodelist=grace` (cpu.sbatch included; P3 scripts untested on the A6000).
 The 8 menu/spread runs already on mira and vega (8-16 of 20 epochs done) are left to finish (~20 min);
 moving them would have queued them behind the 4 grace jobs and added ~4 h.
+
+### Menu and spread reward, results (2026-10-28; shift 0.5, 6 seeds, epochs 3-20)
+
+Jobs 426342-426353 (mira/vega/grace), rnd3x3 job 426341 (200 seeds). results/summary/p4b_interface.csv,
+figures/p4b_interface. Paired by seed; diversity in Hamming units, fitness and next problem in % of no AI.
+
+| arm | diversity | help while assisted | next problem | answers that help | distinct |
+|---|---|---|---|---|---|
+| edit, never updated | -0.02 | -3.3% | -7.9% | 3.0% | 0.32 |
+| edit, thumbs | +0.05 | -2.0% | -2.7% | 2.6% | 0.38 |
+| (a) edit, best of 3, never updated | +0.36 (p = 0.09) | +2.5% | -3.0% | 3.7% | 0.30 |
+| (b) edit, spread reward | -0.07 | +4.6% | -1.1% | 3.1% | 0.44 |
+| random edit (200 seeds) | +0.14 | +15.2% | +4.9% | 4.1% | 0.87 |
+| random edit, best of 3 (200 seeds) | +0.13 | +24.7% | +6.4% | | |
+
+(a) Menu: vs single edits +0.38 diversity (p = 0.08), +5.8 while assisted (p = 0.18), +4.9 next problem
+(p = 0.24). Vs random best of 3: -15.4 while assisted (p = 0.03), +0.9 next problem (n.s.). The three
+temperature-1 answers are often the same edit: 1.87 distinct of 3 per request.
+(b) Spread: vs thumbs +6.6 while assisted (p = 0.08), -0.12 diversity, +1.6 next problem (both n.s.). First
+trained arm above no AI while assisted (+4.6%, n.s.). Gap to random edits -8.1 (p = 0.25), down from -14.7 for
+thumbs; distinct 0.38 -> 0.44.
+Reading: neither keeps up with random proposals of the same form while assisted. Both keep the culture as
+diverse as no AI (the edit form does that, not the reward). Spread is the best trained arm so far, but the
+gain over thumbs is not significant at 6 seeds. On these 6 seeds random edits are weaker than on 200
+(+12.6% / -2.7% vs +15.2% / +4.9%), so next-problem numbers near zero are within seed noise.
