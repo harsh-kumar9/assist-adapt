@@ -1,10 +1,11 @@
 #!/bin/bash
-# CPU-only job on mira/vega (no GPU). Compute goes through SLURM, not ada (Harsh, 2026-10-20).
+# CPU-only job on grace (no GPU). Compute goes through SLURM, not ada (Harsh, 2026-10-20); this project
+# runs on grace only, mira and vega are for other projects (Harsh, 2026-10-28).
 #   sbatch scripts/cpu.sbatch <python module> <args...>
 #SBATCH --job-name=cpu
 #SBATCH --partition=ashton
 #SBATCH --qos=ashton
-#SBATCH --exclude=grace
+#SBATCH --nodelist=grace
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
 #SBATCH --time=03:00:00

@@ -4,7 +4,7 @@
 #SBATCH --job-name=p3eval
 #SBATCH --partition=ashton
 #SBATCH --qos=ashton
-#SBATCH --exclude=grace
+#SBATCH --nodelist=grace
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G

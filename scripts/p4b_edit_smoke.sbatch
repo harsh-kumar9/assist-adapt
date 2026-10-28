@@ -4,7 +4,7 @@
 #SBATCH --job-name=p4b_edit_smoke
 #SBATCH --partition=ashton
 #SBATCH --qos=ashton
-#SBATCH --exclude=grace
+#SBATCH --nodelist=grace
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G

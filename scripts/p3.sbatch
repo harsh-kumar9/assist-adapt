@@ -1,10 +1,10 @@
 #!/bin/bash
-# P3: LLM assistant learning online in the community. One GPU on mira or vega.
+# P3: LLM assistant learning online in the community. One GPU on grace (mira/vega are for other projects).
 #   sbatch scripts/p3.sbatch <out dir> <args for src.llm.online...>
 #SBATCH --job-name=p3
 #SBATCH --partition=ashton
 #SBATCH --qos=ashton
-#SBATCH --exclude=grace
+#SBATCH --nodelist=grace
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G

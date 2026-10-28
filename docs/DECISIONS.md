@@ -840,3 +840,9 @@ Fake-LLM CPU test of both paths passed; rnd3 reproduces the stored P4a baseline 
 Cancelled the 16 held P3 Gemma-3-4B jobs (420489-420504: thumbs and pairwise --prefer-valid, seeds 4-11,
 results/p3g). Seeds 0-3 of both arms finished and stay in results/p3g; the seed 4-11 dirs hold only the
 frozen code copy, so the runs can be resubmitted with scripts/p3_submit.sh if the replication comes back.
+
+### Grace only (Harsh, 2026-10-28: "can we only use grace for this work? leave mira and vega for my other projects")
+
+Every scripts/*.sbatch now has `--nodelist=grace` (cpu.sbatch included; P3 scripts untested on the A6000).
+The 8 menu/spread runs already on mira and vega (8-16 of 20 epochs done) are left to finish (~20 min);
+moving them would have queued them behind the 4 grace jobs and added ~4 h.
