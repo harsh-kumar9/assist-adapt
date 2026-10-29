@@ -1065,3 +1065,46 @@ Reading:
 - Across round 1 and 2: rewards that score unhelpful answers either make the model a random generator (dup,
   both interfaces) or make it worse (crowd helps less, rate collapses). None beats random. Consistent with the
   diagnosis that only knowing good modules can.
+
+### Step 2 results: memory in the LLM's prompt (2026-10-29; jobs 427538-427549)
+
+6 seeds, shift 0.5, epochs 3-20, paired by seed (scripts/analysis/p4b_memory.py, figures/p4b_memory,
+results/summary/p4b_memory.csv; also in p4b_interface). Copy shares are among answers to prompts with a listing;
+help rates of copies and other answers are pooled over each seed's requests. No time-outs (dup runs 3.6 h).
+
+| arm | diversity | fitness while assisted | next problem | helps | listed | copies | copies help / others | modules in memory | distinct answers | repeats |
+|---|---|---|---|---|---|---|---|---|---|---|
+| memory, thumbs | +0.01 | -2.4% | -3.9% | 3.9% | 71% | 83% (50-96 by seed) | 5.3% / 1.6% | 14.5 | 16% | 77% |
+| no memory, thumbs | +0.05 | -2.0% | -2.7% | 2.6% | | | | | 38% | |
+| memory, duplicate penalty | +0.15 | +12.5% | -1.5% | 4.4% | 96% | 4.9% (2-9) | 23.4% / 3.3% | 73.2 | 83% | 3% |
+| no memory, duplicate penalty | +0.09 | +10.9% | -3.2% | 4.2% | | | | | 87% | 2% |
+| random edit (same seeds) | +0.02 | +12.6% | -2.7% | | | | | | | |
+
+Chance of copying (random edit of 1-3 flips): 1.6-1.7%. Copying by epoch, thumbs: 0.54 (untrained), 0.79, 0.66,
+0.69, ... 0.97, 0.91, 0.87, 0.90, 0.95, 0.94, 0.99, 0.86; duplicate penalty: 0.54, 0.41, 0.18, 0.06, then 0.02 to
+0.08. Update samples (T 2) follow the deployed share closely. 78% of the thumbs arm's helps come from copies
+(dup arm 22%).
+Contrasts: memory thumbs - no memory thumbs div -0.04 (p=0.82), fit -0.4 (p=0.93), next -1.2 (p=0.68); memory
+thumbs - rnd3 fit -15.0 (p=0.001); memory dup - no memory dup div +0.06 (p=0.69), fit +1.6 (p=0.21), next +1.7
+(p=0.41); memory dup - rnd3 fit -0.2 (p=0.95), div +0.12 (p=0.47); memory dup - memory thumbs fit +14.8 (p=0.001).
+Reading:
+- The trap is real for behaviour: retrained on thumbs, the model copies more and more, from 54% untrained to
+  90-99% in the last eight epochs. Per answer a copy helps 5.3% and its own edit 1.6%, so thumbs pays for copying.
+- But copying always does not change the culture's outcome relative to the same model without memory: same
+  diversity, same fitness, both about 15 points below random edits. Copying finds nothing new: the memory holds
+  14.5 helpful modules per epoch, against 73 when the model explores. The sim's memory-always design fell back on
+  random edits; the LLM's own edits under thumbs are repetitive and worse than random, so there is little to copy.
+  Copying replaced one kind of repetition with another (distinct answers 16% vs 38%).
+- The duplicate penalty trains copying out: 8 samples that copy the same listed edit are duplicates of each other,
+  so copies are penalised as repeats. Copying falls to 2-8%, near chance. When it does copy, the copy helps 23%
+  (the sim at 10% memory: 23.4%), but at 5% that adds +1.6 (n.s.). It stays a random edit generator.
+- Neither reward finds the mix the sim says is best (memory on 25-50% of requests: +7 to +9 over random edits).
+  Thumbs drives the learner to always copy; the duplicate penalty to never. The mix has to come from outside.
+
+Next, proposed (not ratified): the provider sets the mix. Show the memory on a share q of requests; score prompts
+with memory by thumbs (the model learned to copy there) and prompts without by the duplicate penalty (it learned
+to explore there); one model, which can tell the two prompt types apart. q = 0.5 and 0.25, 6 seeds, grace, 12
+runs. Prediction from the sim (p50, p25): +7 to +9 over random edits with diversity near no AI. Readouts: copy
+share on memory prompts, distinct answers on the others, the usual three. Grounding: explore and exploit kept in
+separate units (March 1991); social learning pays only when individual learning continues (Rogers 1988; Rendell
+et al. 2010).

@@ -1,0 +1,5 @@
+arm,name,n,div,div_ci,fit,fit_ci,next_off,next_off_ci,help,help_ci,listed,listed_ci,copied,copied_ci,chance,chance_ci,copy_help,copy_help_ci,other_help,other_help_ci,update_copy,update_copy_ci,mem_size,mem_size_ci
+memthumbsE3T2,"Memory, thumbs",6,0.01032,0.2386,-2.35,7.138,-3.865,7.976,0.03869,0.005273,0.7123,0.05998,0.8259,0.1504,0.01606,0.002893,0.05278,0.0103,0.01556,0.005181,0.8293,0.1602,14.52,4.113
+memdupE3T2,"Memory, duplicate penalty",6,0.1455,0.1271,12.46,7.246,-1.471,8.686,0.0442,0.006422,0.9632,0.01186,0.04883,0.02905,0.01682,0.0005551,0.2338,0.04355,0.03275,0.002099,0.02927,0.01288,73.17,5.504
+thumbsE3T2,"No memory, thumbs",6,0.05434,0.2975,-1.999,8.949,-2.672,7.672,0.0261,0.00974,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan
+dupE3T2,"No memory, duplicate penalty",6,0.08849,0.3346,10.87,8.733,-3.19,5.588,0.04152,0.00413,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan
