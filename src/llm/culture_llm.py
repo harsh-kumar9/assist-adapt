@@ -30,6 +30,11 @@ edit of at most k choices, except that with probability q it asks for a new appr
 uses. Edits are scored by `--reward`; leaps earn 1 only if they help, no team holds them, and they change
 more than k choices.
 
+Memory (`--memory k`, with `--edits`; step 2 of getting past random): the prompt also lists up to k modules that
+the assistant's answers moved some team to earlier this epoch (the provider's thumbs log), within `edits` flips
+of the asker's module, most recently helpful first, as the flips that reach them. It starts empty each epoch.
+The sim's mem_now_recent (src/culture.py) answers with the first one every time.
+
 `--kl` adds the usual penalty toward the untrained model. `--edits k` changes the interface: instead of a
 full approach the model names at most k choices to flip in the asker's approach (reach k by design). Between epochs the problem changes and the
 updated model is redeployed. This is the loop of a deployed model retrained on its users' feedback.
@@ -93,6 +98,15 @@ def reward(kind, sugg, asker, fit_asker, F, culture_mods, lam, reach=3, crowd=No
     raise ValueError(kind)
 
 
+def listed(mem, code, reach, k):
+    """Up to k remembered modules within 1..reach flips of this team's module, most recently helpful first."""
+    if not k or not mem:
+        return []
+    m = int(code) & int(MC)
+    near = [(r, x) for x, r in mem.items() if 0 < popcount(x ^ m) <= reach]
+    return [x for _, x in sorted(near, key=lambda p: -p[0])[:k]]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--reward", default="thumbs",
@@ -105,6 +119,8 @@ def main():
                     help="edit interface: the model names at most this many choices to flip (0 = full answers)")
     ap.add_argument("--leap", type=float, default=0.0,
                     help="tweak or leap: share of requests that ask for a new approach instead of an edit")
+    ap.add_argument("--memory", type=int, default=0,
+                    help="list up to this many modules that helped some team this epoch, within --edits flips")
     ap.add_argument("--menu", type=int, default=1,
                     help="answers per request; the team tries each and keeps the best that helps")
     ap.add_argument("--kl", type=float, default=0.0)
@@ -128,10 +144,13 @@ def main():
                     help="sampling temperature for the per-epoch update (default: same as deployed)")
     ap.add_argument("--max-new-tokens", type=int, default=16)
     ap.add_argument("--micro-batch", type=int, default=48)
+    ap.add_argument("--gen-batch", type=int, default=0,
+                    help="most sequences per generate call (0 = all at once); the update batch stays --chunk")
     ap.add_argument("--save-epochs", default="1,5,10,20")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
+    assert not args.memory or args.edits, "--memory needs --edits"
 
     os.makedirs(args.out, exist_ok=True)
     json.dump(vars(args), open(os.path.join(args.out, "config.json"), "w"), indent=1)
@@ -147,7 +166,7 @@ def main():
     lrng = np.random.default_rng([args.seed, 13])  # which requests ask for a leap
     codes = comm.codes0.copy()
     llm = LLM(types.SimpleNamespace(**{k: getattr(args, k) for k in (
-        "model", "device", "lora_r", "lr", "temperature", "max_new_tokens", "micro_batch", "kl")}))
+        "model", "device", "lora_r", "lr", "temperature", "max_new_tokens", "micro_batch", "kl", "gen_batch")}))
 
     state_path = os.path.join(args.out, "state.json")
     start = 0
@@ -165,8 +184,10 @@ def main():
     t0 = time.time()
     for e in range(start, args.epochs):
         F = lands[e].F
-        log = []  # requests served this epoch: (asker code, asker fitness, context, culture modules, leap, adopted module)
+        log = []  # requests served this epoch: (asker code, asker fitness, context, culture modules, leap, adopted module,
+        #           listed modules)
         crowd = {}  # module -> askers who adopted it from the assistant this epoch
+        mem = {}  # module -> last round an answer moved a team to it this epoch
         reqs = []  # every request served: round, team slot, asker code, answer shown (-1 if none), helped
         recs = []
         for t in range(args.rounds):
@@ -183,11 +204,13 @@ def main():
             idx = np.flatnonzero(query)
             ctx = top_context(codes, fit, args.context) if args.context else None
             culture = np.unique(codes & MC)
-            shown, sizes, helped, leaps, menu_distinct = [], [], [], [], []
+            shown, sizes, helped, leaps, menu_distinct, copies = [], [], [], [], [], []
             if len(idx):
                 leap = lrng.random(len(idx)) < args.leap if args.leap else np.zeros(len(idx), bool)
-                _, _, texts = llm.sample([render(codes[i], context=ctx, edits=args.edits, leap=bool(lp))
-                                          for i, lp in zip(idx, leap)], args.menu, seed=args.seed * 100003 + e * 1000 + t)
+                lists = [listed(mem, codes[i], args.edits, args.memory) for i in idx]
+                _, _, texts = llm.sample([render(codes[i], context=ctx, edits=args.edits, leap=bool(lp), memory=ls)
+                                          for i, lp, ls in zip(idx, leap, lists)], args.menu,
+                                         seed=args.seed * 100003 + e * 1000 + t)
                 held = set(culture.tolist())
                 for j, i in enumerate(idx):
                     opts = [answer(texts[j * args.menu + c], codes[i], 0 if leap[j] else args.edits) for c in range(args.menu)]
@@ -196,12 +219,16 @@ def main():
                     s = max(opts, key=lambda o: F[(codes[i] & ~MC) | o]) if opts else None  # the team tries each
                     cand = None if s is None else (codes[i] & ~MC) | s
                     good = s is not None and F[cand] > fit[i]
-                    log.append((int(codes[i]), float(fit[i]), ctx, culture, bool(leap[j]), int(s) if good else None))
-                    reqs.append((t, int(i), int(codes[i]), -1 if s is None else int(s), int(good)))
+                    log.append((int(codes[i]), float(fit[i]), ctx, culture, bool(leap[j]), int(s) if good else None, lists[j]))
+                    reqs.append((t, int(i), int(codes[i]), -1 if s is None else int(s), int(good), len(lists[j]),
+                                 int(s in lists[j])))
                     if s is None:
                         continue
+                    if lists[j]:
+                        copies.append((s in lists[j], good))
                     if good:
                         crowd[int(s)] = crowd.get(int(s), 0) + 1
+                        mem[int(s)] = t  # listed from the next round on
                     shown.append(s)
                     sizes.append(popcount(s ^ (int(codes[i]) & int(MC))))
                     helped.append(good)
@@ -223,6 +250,13 @@ def main():
                            edit_size=float(np.mean(sizes)))
                 if args.menu > 1:
                     rec.update(menu_distinct=float(np.mean(menu_distinct)))
+                if args.memory:
+                    rec.update(listed=float(np.mean([len(ls) > 0 for ls in lists])))
+                if copies:
+                    cp = np.array(copies, bool)
+                    rec.update(copied=float(cp[:, 0].mean()),
+                               copy_help=float(cp[cp[:, 0], 1].mean()) if cp[:, 0].any() else None,
+                               other_help=float(cp[~cp[:, 0], 1].mean()) if (~cp[:, 0]).any() else None)
                 if leaps:
                     lp = np.array(leaps, float)
                     rec.update(n_leap=len(leaps), leap_improve=float(lp[:, 0].mean()), leap_new=float(lp[:, 1].mean()),
@@ -238,7 +272,8 @@ def main():
         upd = dict(epoch=e, next_off=float(np.mean(vals)), served=len(log))
         if args.reward != "frozen" and log:
             pick = urng.choice(len(log), min(args.update_prompts, len(log)), replace=False)
-            R_all, G_all, D_all, H_all = [], [], [], []  # H_all: (helpful answers, distinct helpful) per group
+            R_all, G_all, D_all, H_all, C_all = [], [], [], [], []  # H_all: (helpful answers, distinct helpful) per group
+            # C_all: share of the G samples that copy a listed module, per prompt with a listing
             share = None
             if args.reward == "crowd":
                 hist = np.bincount([a & int(MC) for a, *_ in log], minlength=1 << M)
@@ -246,13 +281,16 @@ def main():
                 share = sum(hist[np.arange(1 << M) ^ m] for m in ball) / len(log)
             for c0 in range(0, len(pick), args.chunk):
                 batch = [log[k] for k in pick[c0:c0 + args.chunk]]
-                out, P, texts = llm.sample([render(a, context=c, edits=args.edits, leap=lp) for a, _, c, _, lp, _ in batch],
+                out, P, texts = llm.sample([render(a, context=c, edits=args.edits, leap=lp, memory=ls)
+                                            for a, _, c, _, lp, _, ls in batch],
                                            args.G,
                                            seed=args.seed * 100003 + e * 1000 + 999 + c0,
                                            temperature=args.update_temperature)
                 R = np.zeros((len(batch), args.G))
-                for bi, (a, fa, _, cult, lp, own) in enumerate(batch):
+                for bi, (a, fa, _, cult, lp, own, ls) in enumerate(batch):
                     suggs = [answer(texts[bi * args.G + j], a, 0 if lp else args.edits) for j in range(args.G)]
+                    if ls:
+                        C_all.append(np.mean([x in ls for x in suggs]))
                     good = set()
                     for j, sugg in enumerate(suggs):
                         R[bi, j], g = reward("leap" if lp else args.reward, sugg, a, fa, F, cult, args.lam,
@@ -272,12 +310,15 @@ def main():
             upd.update(reward=float(np.mean(R_all)), gain=float(np.mean(G_all)), group_distinct=float(np.mean(D_all)),
                        group_any=float((h[:, 0] > 0).mean()), group_multi=float((h[:, 1] > 1).mean()),
                        kl=stats["kl"])
+            if C_all:
+                upd.update(update_copy=float(np.mean(C_all)))
         with open(os.path.join(args.out, "rounds.jsonl"), "a") as f:
             for r in recs:
                 f.write(json.dumps(r) + "\n")
         with open(os.path.join(args.out, "epochs.jsonl"), "a") as f:
             f.write(json.dumps(upd) + "\n")
-        cols = dict(zip(("t", "slot", "code", "answer", "helped"), map(list, zip(*reqs)))) if reqs else {}
+        names = ("t", "slot", "code", "answer", "helped", "n_listed", "copied")
+        cols = dict(zip(names if args.memory else names[:5], map(list, zip(*reqs)))) if reqs else {}
         with open(os.path.join(args.out, "requests.jsonl"), "a") as f:
             f.write(json.dumps(dict(epoch=e, **cols)) + "\n")
         llm.save(os.path.join(args.out, "adapter"))

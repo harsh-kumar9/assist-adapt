@@ -2,7 +2,8 @@
 
 Arms (results/p4b_s05): full answers vs edits of at most 3 choices vs tweak or leap, each never updated
 and retrained on thumbs (update samples at temperature 2); a menu of 3; and rewards beyond thumbs (spread,
-duplicate penalty, crowding penalty, signed rating). Per run, epochs 3-20: culture diversity (last
+duplicate penalty, crowding penalty, signed rating); edits with a memory of what helped in the prompt
+(details in p4b_memory.py). Per run, epochs 3-20: culture diversity (last
 20 rounds of each epoch), fitness while assisted, fitness on the next problem with the assistant removed
 (mean of 30 rounds), share of answers that help. Paired by seed; no AI and oracles from P4a, same seeds.
 
@@ -25,7 +26,8 @@ ARMS = [("frozen", "Full answer, never updated", "#b8b6ad", "--"), ("thumbsT2", 
         ("tlE3", "Tweak or leap, never updated", "#f2c46b", "-"), ("tlE3T2", "Tweak or leap, thumbs", "#c98500", "-"),
         ("frozenE3M3", "Edit, best of 3, never updated", "#e66b8f", "-"), ("spreadE3T2", "Edit, spread reward", "#3b8fd6", "-"),
         ("dupE3T2", "Edit, duplicate penalty", "#2aa3a3", "-"), ("rateE3T2", "Edit, signed rating", "#8a5a44", "-"),
-        ("crowdT2", "Full answer, crowding penalty", "#c03b2b", "--"), ("dupT2", "Full answer, duplicate penalty", "#7a4fb8", "--")]
+        ("crowdT2", "Full answer, crowding penalty", "#c03b2b", "--"), ("dupT2", "Full answer, duplicate penalty", "#7a4fb8", "--"),
+        ("memthumbsE3T2", "Edit + memory, thumbs", "#1f2f8a", "-"), ("memdupE3T2", "Edit + memory, duplicate penalty", "#b0127a", "-")]
 ORACLES = [("results/p4a_cost/shift0.5", "none"), ("results/p4a_cost/shift0.5", "pcc"),
            ("results/p4a_cost/shift0.5", "rad3"), ("results/p4a_grid/shift0.5", "leap_3_10"),
            ("results/p4a_cost/shift0.5", "rnd1"), ("results/p4a_cost/shift0.5", "rnd3"),
@@ -122,7 +124,9 @@ for a, b in [("frozenE3", "frozen"), ("thumbsE3T2", "thumbsT2"), ("thumbsE3T2", 
              ("dupE3T2", "thumbsE3T2"), ("dupE3T2", "frozenE3"), ("dupE3T2", "rnd3"),
              ("rateE3T2", "thumbsE3T2"), ("rateE3T2", "rnd3"),
              ("crowdT2", "thumbsT2"), ("crowdT2", "frozen"), ("crowdT2", "rndfull"),
-             ("dupT2", "thumbsT2"), ("dupT2", "rndfull"), ("dupT2", "crowdT2")]:
+             ("dupT2", "thumbsT2"), ("dupT2", "rndfull"), ("dupT2", "crowdT2"),
+             ("memthumbsE3T2", "thumbsE3T2"), ("memthumbsE3T2", "rnd3"), ("memdupE3T2", "dupE3T2"),
+             ("memdupE3T2", "rnd3"), ("memdupE3T2", "memthumbsE3T2")]:
     done = [x[0] for x in arms]
     if a not in done or not (b in done or b in orc):
         continue

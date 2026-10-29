@@ -1002,3 +1002,34 @@ Reading:
   3.1% at 50%). So a learner rewarded per answer (thumbs) should copy more and more, toward "always", the worst
   design here: the individually best answer is not the best for the culture (Rogers 1988; Rendell et al. 2010).
   This is a prediction for the LLM, not yet a result.
+
+### Step 2: memory in the LLM's prompt (2026-10-29; ratified: "Go ahead")
+
+Same setup as thumbsE3T2 and dupE3T2 (edits <=3, top-3 approaches in the prompt, update samples at T 2,
+deployed at T 1, shift 0.5, 6 seeds, grace), plus a memory block (`--memory 3`). The prompt lists up to 3
+modules that the assistant's answers moved some team to this epoch (the provider's thumbs log: an answer that
+helped is one the team adopted), within 1-3 flips of the asker's module, most recently helpful first, written as
+the choices this team would flip to reach them. Memory starts empty each epoch (new problem) and holds answers
+that helped in earlier rounds of the epoch, as the sim's mem_now_recent. No scores are shown. Update prompts
+re-render the listing the asker saw. Runs memthumbsE3T2 (thumbs) and memdupE3T2 (duplicate penalty, beta 0.5).
+
+Readouts per epoch: share of requests with a listing; share of answers that copy a listed edit (epoch 0 is the
+untrained model's rate); help rate of copies and of other answers; share of the 8 update samples that copy.
+Plus the usual diversity, fitness while assisted, next problem, vs the no-memory arm on the same seeds, rnd3 and
+the sim memory arms. Prediction (from the sim, before the runs): under thumbs copying rises across epochs and
+fitness falls toward memory-always (+11%) with the culture narrowing; dup may hold a mix. Later, if useful: the
+never-updated model with memory, and the provider showing the memory on 50% of requests with dup. Fine-tuning
+on thumbs-up data is deferred.
+
+Step 2 build and smoke (2026-10-29). Code: `--memory` in src/llm/culture_llm.py, `memory=` in render
+(src/llm/online.py). CPU check with a stub LLM: with memory off, rounds/epochs/requests logs are byte-identical
+to the committed code (thumbs and dup); with memory on, listings rebuilt from requests.jsonl match the logged
+ones exactly; a stub that always copies the first listing helps 5.3% (copies 7.2%), one that copies half the
+time 6.8% (copies 17.3%), a random-edit stub 4.0%, close to the sim's memory-always / p50 / rnd3. A random edit
+matches a listed one 1.6% of the time (chance). First GPU smoke ran out of memory in the update's sampling (64
+prompts x 8 = 512 sequences with the longer prompt); added `--gen-batch 256`, which generates the same padded
+prompts in slices and leaves the update batch at 64 prompts (default 0 keeps the old single call). Smoke, seed 0,
+epoch 0, untrained model: 98% of requests had a listing; 58% of answers copied a listed edit (64% in the last 20
+rounds; 62% of update samples at T 2); copies helped 7.3%, other answers 4.7%; diversity in the last 20 rounds
+1.80 (same model without memory 2.66, no AI 4.45, PCC 1.34); fitness 0.548 (without memory 0.552). Submitted
+memthumbsE3T2 and memdupE3T2, seeds 0-5, with --gen-batch 256 (jobs 427538-427549, grace).

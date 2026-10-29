@@ -49,6 +49,8 @@ STEP_BACK = "\nIf no change would help, repeat the current values and the team w
 
 
 CONTEXT_HEAD = "Approaches the best-scoring teams use right now (choices 1-10 | choices 11-20, score):\n"
+# P4b step 2: modules the assistant's answers moved other teams to this epoch, as flips from the asker's module
+MEMORY_HEAD = "Values of choices 1-10 that helped other teams recently, written as the choices this team would flip to reach them:\n"
 
 
 def digits(code, lo, hi):
@@ -68,13 +70,18 @@ def top_context(codes, fit, k, N=20, M=10):
     return out
 
 
-def render(code, N=20, M=10, step_back=False, context=None, edits=0, leap=False):
+def render(code, N=20, M=10, step_back=False, context=None, edits=0, leap=False, memory=None):
     bits = [(int(code) >> j) & 1 for j in range(N)]
     text = USER.format(mc="".join(map(str, bits[:M])), rest="".join(map(str, bits[M:])))
     if leap:
         text = text.replace(FULL_ASK, LEAP_ASK)
     elif edits:
         text = text.replace(FULL_ASK, EDIT_ASK.format(k=edits, example=", ".join(["2", "7", "9"][:edits])))
+    if memory:
+        head, ask = text.rsplit("\n", 1)
+        lines = "".join("- " + ", ".join(str(j + 1) for j in range(M) if (int(m) ^ int(code)) >> j & 1) + "\n"
+                        for m in memory)
+        text = head + "\n" + MEMORY_HEAD + lines + ask
     if context:
         lines = "".join(f"{i + 1}. {digits(c, 0, M)} | {digits(c, M, N)}, score {f:.2f}\n"
                         for i, (c, f) in enumerate(context))
@@ -157,10 +164,20 @@ class LLM:
         torch.manual_seed(seed)
         enc = self.tok([self.chat(u) for u in users], return_tensors="pt", padding=True).to(self.args.device)
         self.model.eval()
+        kw = dict(use_cache=True, do_sample=True, temperature=temperature, top_p=1.0, top_k=0,
+                  max_new_tokens=self.args.max_new_tokens, num_return_sequences=G, pad_token_id=self.tok.pad_token_id)
+        gb = getattr(self.args, "gen_batch", 0)  # most sequences per generate call (0 = all at once)
         with torch.no_grad():
-            out = self.model.generate(**enc, use_cache=True, do_sample=True, temperature=temperature, top_p=1.0,
-                                      top_k=0, max_new_tokens=self.args.max_new_tokens,
-                                      num_return_sequences=G, pad_token_id=self.tok.pad_token_id)
+            if not gb or len(users) * G <= gb:
+                out = self.model.generate(**enc, **kw)
+            else:  # same padded prompts, generated in slices, completions right-padded as generate does
+                step = max(1, gb // G)
+                outs = [self.model.generate(input_ids=enc["input_ids"][s:s + step],
+                                            attention_mask=enc["attention_mask"][s:s + step], **kw)
+                        for s in range(0, len(users), step)]
+                L = max(o.shape[1] for o in outs)
+                out = torch.cat([torch.nn.functional.pad(o, (0, L - o.shape[1]), value=self.tok.pad_token_id)
+                                 for o in outs])
         P = enc["input_ids"].shape[1]
         texts = self.tok.batch_decode(out[:, P:], skip_special_tokens=True)
         return out, P, texts
