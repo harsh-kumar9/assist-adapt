@@ -456,12 +456,14 @@ def p1_gate(tag="p1"):
 
 
 def write_rows(rows, name):
+    import csv
     os.makedirs("results/summary", exist_ok=True)
     keys = list(rows[0].keys())
-    with open(f"results/summary/{name}.csv", "w") as f:
-        f.write(",".join(keys) + "\n")
+    with open(f"results/summary/{name}.csv", "w", newline="") as f:
+        w = csv.writer(f, lineterminator="\n")  # quotes names with commas
+        w.writerow(keys)
         for r in rows:
-            f.write(",".join(f"{r[k]:.4g}" if isinstance(r[k], float) else str(r[k]) for k in keys) + "\n")
+            w.writerow(f"{r[k]:.4g}" if isinstance(r[k], float) else str(r[k]) for k in keys)
     print(f"wrote results/summary/{name}.csv ({len(rows)} rows)")
 
 

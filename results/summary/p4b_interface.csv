@@ -1,17 +1,19 @@
-arm,name,n,div,improve,uniq,fit_vs_none,next_vs_none,leap_good
-frozen,Full answer, never updated,6,2.332,0.04148,0.09479,-0.9047,-8.979,nan
-thumbsT2,Full answer, thumbs,6,2.03,0.05955,0.0466,-1.144,-8.874,nan
-frozenE3,Edit (≤3), never updated,6,2.933,0.02954,0.3153,-3.248,-7.932,nan
-thumbsE3T2,Edit (≤3), thumbs,6,3.005,0.0261,0.3809,-1.999,-2.672,nan
-tlE3,Tweak or leap, never updated,6,3.027,0.0309,0.3569,-0.4868,-0.1261,0.03227
-tlE3T2,Tweak or leap, thumbs,6,3.132,0.03416,0.5333,-1.117,-7.427,0.0296
-frozenE3M3,Edit, best of 3, never updated,6,3.311,0.03665,0.2998,2.507,-2.996,nan
-spreadE3T2,Edit, spread reward,6,2.88,0.03104,0.4424,4.596,-1.1,nan
-oracle_none,none,6,2.951,nan,nan,0,0,nan
-oracle_pcc,pcc,6,1.866,nan,nan,17.54,-4.404,nan
-oracle_rad3,rad3,6,2.743,nan,nan,53.8,6.078,nan
-oracle_leap_3_10,leap_3_10,6,2.75,nan,nan,58.42,11.93,nan
-oracle_rnd1,rnd1,6,2.959,nan,nan,-5.279,-7.202,nan
-oracle_rnd3,rnd3,6,2.974,nan,nan,12.65,-2.651,nan
-oracle_rndfull,rndfull,6,3.444,nan,nan,15.32,0.6025,nan
-oracle_rnd3x3,rnd3x3,6,2.927,nan,nan,17.87,-3.856,nan
+arm,name,n,div,improve,uniq,fit_vs_none,next_vs_none,leap_good,edit_size,group_any,group_multi,repeat
+frozen,"Full answer, never updated",6,2.332,0.04148,0.09479,-0.9047,-8.979,nan,nan,nan,nan,nan
+thumbsT2,"Full answer, thumbs",6,2.03,0.05955,0.0466,-1.144,-8.874,nan,nan,nan,nan,nan
+frozenE3,"Edit (≤3), never updated",6,2.933,0.02954,0.3153,-3.248,-7.932,nan,nan,nan,nan,nan
+thumbsE3T2,"Edit (≤3), thumbs",6,3.005,0.0261,0.3809,-1.999,-2.672,nan,nan,nan,nan,nan
+tlE3,"Tweak or leap, never updated",6,3.027,0.0309,0.3569,-0.4868,-0.1261,0.03227,nan,nan,nan,nan
+tlE3T2,"Tweak or leap, thumbs",6,3.132,0.03416,0.5333,-1.117,-7.427,0.0296,nan,nan,nan,nan
+frozenE3M3,"Edit, best of 3, never updated",6,3.311,0.03665,0.2998,2.507,-2.996,nan,nan,nan,nan,nan
+spreadE3T2,"Edit, spread reward",6,2.88,0.03104,0.4424,4.596,-1.1,nan,nan,nan,nan,nan
+dupE3T2,"Edit, duplicate penalty",6,3.039,0.04152,0.8686,10.87,-3.19,nan,2.781,0.1699,0.07368,0.01599
+crowdT2,"Full answer, crowding penalty",6,2.833,0.02999,0.2883,-2.47,-5.166,nan,4.793,0.07903,0.02821,0.6027
+oracle_none,none,6,2.951,nan,nan,0,0,nan,nan,nan,nan,nan
+oracle_pcc,pcc,6,1.866,nan,nan,17.54,-4.404,nan,nan,nan,nan,nan
+oracle_rad3,rad3,6,2.743,nan,nan,53.8,6.078,nan,nan,nan,nan,nan
+oracle_leap_3_10,leap_3_10,6,2.75,nan,nan,58.42,11.93,nan,nan,nan,nan,nan
+oracle_rnd1,rnd1,6,2.959,nan,nan,-5.279,-7.202,nan,nan,nan,nan,nan
+oracle_rnd3,rnd3,6,2.974,nan,nan,12.65,-2.651,nan,nan,nan,nan,nan
+oracle_rndfull,rndfull,6,3.444,nan,nan,15.32,0.6025,nan,nan,nan,nan,nan
+oracle_rnd3x3,rnd3x3,6,2.927,nan,nan,17.87,-3.856,nan,nan,nan,nan,nan

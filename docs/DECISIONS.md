@@ -906,3 +906,29 @@ groups with two different helpful answers 0.059 / 0.098 and 0.059 / 0.023. Help 
 askers, so 2-10% of groups, not ~2%. The rule stands (75-90% of groups give thumbs no signal; rescaling
 rewards act only in the multi-helpful groups), but "spread's +6.6 is most likely noise" was too strong: it is
 open. Not adding spread seeds unless asked. Page updated (version 7).
+
+### Duplicate and crowding penalty, results (2026-10-28)
+
+Round 1 done (jobs 426458-426469, grace, all 20 epochs). Shift 0.5, 6 seeds, epochs 3-20, paired by seed,
+% vs no AI (scripts/analysis/p4b_interface.py, p4b_same_askers.py).
+- dupE3T2: diversity +0.09 vs no AI (thumbs edits +0.06); fitness while assisted +10.9% (thumbs -2.0%);
+  next problem -3.2% (thumbs -2.7%). vs thumbs edits: fit +12.9 (p=0.004), div +0.03, next -0.5. vs rnd3:
+  fit -1.8 (p=0.59), div +0.06, next -0.5. Distinct answers per update group 5.6 -> 8.0 of 8 by epoch 4 in
+  every seed; 87% of deployed answers unique (thumbs 38%); 1.6% repeats to the same unchanged team; edit size
+  2.78 (rnd3 2.0). On its own requests it helps 4.11% of the time, rnd3 on the same askers 4.11%.
+  Reading: the penalty turns the LLM into a random edit generator. The 15-point gap to random edits under
+  thumbs was repetition; training removes it but does not get past random (the model never sees the
+  landscape). The edit form already kept diversity; this adds fitness.
+- crowdT2: diversity -0.12 vs no AI (thumbs full -0.92, never updated -0.62); vs thumbs full div +0.80
+  (p=0.051), fit -1.3, next +3.7; vs random full answers fit -17.8 (p=0.003). Help rate 3.0% (thumbs full
+  6.0%); on its own requests 3.0% vs 5.6% for a random module. Seeds split: s1, s3 collapsed to one answer
+  (shown 86-100% of the time, 60-68% of askers within 2 flips of it; diversity 2.2-2.3, like thumbs); s2, s4
+  and partly s0 settled on a module far from everyone that almost never helps (help 0.4%; diversity 2.9-3.5);
+  s5 learned varied answers (5% top share, diversity 3.0).
+  Reading: on average it stops the narrowing, but mostly by making the assistant less useful, not more
+  varied. Two failure modes: a fully collapsed group gets zero advantage under any reward, and the
+  full-answer model starts near collapse (1.6-2.5 distinct answers of 8 at T 2); and charging for nearness to
+  askers pays the model to be far and useless.
+Round 2 submitted after reading this, as planned (grace, jobs 427124-427135): rateE3T2 s0-5 (even) and dupT2
+s0-5 (odd). dupT2 is now the key one: does the duplicate penalty work on full answers, which start near
+collapse?
