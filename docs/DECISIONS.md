@@ -1108,3 +1108,27 @@ runs. Prediction from the sim (p50, p25): +7 to +9 over random edits with divers
 share on memory prompts, distinct answers on the others, the usual three. Grounding: explore and exploit kept in
 separate units (March 1991); social learning pays only when individual learning continues (Rogers 1988; Rendell
 et al. 2010).
+
+### Step 3: the provider sets the mix (2026-10-29; ratified: "go ahead, run the trained version first")
+
+As proposed above. Code: `--memory-share q` and `--memory-reward` in src/llm/culture_llm.py. Each request is
+shown the memory with probability q (own random stream, so the other draws are unchanged); a request drawn for
+memory with no remembered module within 3 flips gets the plain edit prompt, as the sim's p<pct> designs fall back
+on a random edit. The reward follows the prompt the model saw: thumbs if it showed a listing, the duplicate
+penalty (beta 0.5) otherwise, so the model can tell which reward applies. Memory still records every answer that
+helped, shown or not. Update prompts are drawn from the epoch's requests as before, so they carry the same mix.
+New update readouts: distinct texts of 8 on prompts with and without a listing.
+CPU check with a stub LLM: with the defaults (q 1, no memory reward) rounds/epochs/requests logs are byte-identical
+to fda4883 (memory thumbs and memory dup, 6 epochs); with the mix, every update prompt with a listing is scored
+by thumbs and every other by dup (0 mismatches of about 15k), listings rebuilt from requests.jsonl match, and the
+shown share is 0.500 / 0.250 of requests with a non-empty listing. A stub that copies the first listing when shown
+helps 7.5% at q 0.5 and 6.1% at q 0.25, against 5.3% always shown and 4.0% for a random-edit stub (3 seeds), the
+same order as the sim's help rates. The stubs' fitness is not comparable: the stub seeded each answer on the prompt
+text, so teams holding the same approach got the same "random" edit in a round. With independent draws per
+request, the driver with a random-edit stub matches the sim's rnd3 over 100 seeds: fitness while assisted +0.7%
+[-1.0, +2.4], diversity +0.03 [-0.06, +0.11], next problem +1.8% [-0.1, +3.7]. So the sim's rnd3 on the same seeds
+is a fair reference for the LLM arms (it was used that way since round 1 without this check).
+No GPU smoke: the model's path (render, sample, update) is the one memdupE3T2 ran.
+Runs memmix50E3T2 and memmix25E3T2, seeds 0-5, edits <=3, update T 2, shift 0.5, --gen-batch 256, 6 h limit
+(jobs 427923-427934, grace; 3 waves of 4, about 11 h).
+Fixed-rule comparison (the provider copies on the memory share, no training there) deferred until these are read.

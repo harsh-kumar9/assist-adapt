@@ -33,7 +33,10 @@ more than k choices.
 Memory (`--memory k`, with `--edits`; step 2 of getting past random): the prompt also lists up to k modules that
 the assistant's answers moved some team to earlier this epoch (the provider's thumbs log), within `edits` flips
 of the asker's module, most recently helpful first, as the flips that reach them. It starts empty each epoch.
-The sim's mem_now_recent (src/culture.py) answers with the first one every time.
+The sim's mem_now_recent (src/culture.py) answers with the first one every time. `--memory-share q` shows the
+memory on a share q of requests only (drawn per request; the rest get the plain edit prompt), as the sim's
+mem_now_recent_p<pct>; `--memory-reward` scores prompts that show a listing with a different reward than
+`--reward` (e.g. thumbs there, dup on the rest), so the provider, not the learner, sets the mix.
 
 `--kl` adds the usual penalty toward the untrained model. `--edits k` changes the interface: instead of a
 full approach the model names at most k choices to flip in the asker's approach (reach k by design). Between epochs the problem changes and the
@@ -121,6 +124,10 @@ def main():
                     help="tweak or leap: share of requests that ask for a new approach instead of an edit")
     ap.add_argument("--memory", type=int, default=0,
                     help="list up to this many modules that helped some team this epoch, within --edits flips")
+    ap.add_argument("--memory-share", type=float, default=1.0,
+                    help="share of requests that are shown the memory (drawn per request)")
+    ap.add_argument("--memory-reward", default=None, choices=["thumbs", "dup"],
+                    help="reward for prompts that show a listing (default: --reward)")
     ap.add_argument("--menu", type=int, default=1,
                     help="answers per request; the team tries each and keeps the best that helps")
     ap.add_argument("--kl", type=float, default=0.0)
@@ -151,6 +158,7 @@ def main():
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     assert not args.memory or args.edits, "--memory needs --edits"
+    assert args.memory or (args.memory_share == 1 and not args.memory_reward), "--memory-share/-reward need --memory"
 
     os.makedirs(args.out, exist_ok=True)
     json.dump(vars(args), open(os.path.join(args.out, "config.json"), "w"), indent=1)
@@ -164,6 +172,7 @@ def main():
     trng = np.random.default_rng([args.seed, 11])
     urng = np.random.default_rng([args.seed, 12])  # which logged requests go into each update
     lrng = np.random.default_rng([args.seed, 13])  # which requests ask for a leap
+    mrng = np.random.default_rng([args.seed, 14])  # which requests are shown the memory (--memory-share)
     codes = comm.codes0.copy()
     llm = LLM(types.SimpleNamespace(**{k: getattr(args, k) for k in (
         "model", "device", "lora_r", "lr", "temperature", "max_new_tokens", "micro_batch", "kl", "gen_batch")}))
@@ -177,6 +186,8 @@ def main():
         rng.bit_generator.state, trng.bit_generator.state, urng.bit_generator.state = st["rng"], st["trng"], st["urng"]
         if "lrng" in st:
             lrng.bit_generator.state = st["lrng"]
+        if "mrng" in st:
+            mrng.bit_generator.state = st["mrng"]
         llm.load(os.path.join(args.out, "adapter"))
         print(f"resumed at epoch {start}", flush=True)
 
@@ -208,6 +219,8 @@ def main():
             if len(idx):
                 leap = lrng.random(len(idx)) < args.leap if args.leap else np.zeros(len(idx), bool)
                 lists = [listed(mem, codes[i], args.edits, args.memory) for i in idx]
+                if args.memory_share < 1:
+                    lists = [ls if d else [] for ls, d in zip(lists, mrng.random(len(idx)) < args.memory_share)]
                 _, _, texts = llm.sample([render(codes[i], context=ctx, edits=args.edits, leap=bool(lp), memory=ls)
                                           for i, lp, ls in zip(idx, leap, lists)], args.menu,
                                          seed=args.seed * 100003 + e * 1000 + t)
@@ -274,6 +287,7 @@ def main():
             pick = urng.choice(len(log), min(args.update_prompts, len(log)), replace=False)
             R_all, G_all, D_all, H_all, C_all = [], [], [], [], []  # H_all: (helpful answers, distinct helpful) per group
             # C_all: share of the G samples that copy a listed module, per prompt with a listing
+            L_all = []  # whether the prompt showed a listing, per group
             share = None
             if args.reward == "crowd":
                 hist = np.bincount([a & int(MC) for a, *_ in log], minlength=1 << M)
@@ -291,17 +305,19 @@ def main():
                     suggs = [answer(texts[bi * args.G + j], a, 0 if lp else args.edits) for j in range(args.G)]
                     if ls:
                         C_all.append(np.mean([x in ls for x in suggs]))
+                    kind = "leap" if lp else args.memory_reward if ls and args.memory_reward else args.reward
                     good = set()
                     for j, sugg in enumerate(suggs):
-                        R[bi, j], g = reward("leap" if lp else args.reward, sugg, a, fa, F, cult, args.lam,
+                        R[bi, j], g = reward(kind, sugg, a, fa, F, cult, args.lam,
                                              args.edits if lp else args.reach, crowd, own, share)
                         G_all.append(g)
                         if g > 0:
                             good.add(sugg)
-                    if args.reward == "dup" and not lp:
+                    if kind == "dup":
                         n = {s: suggs.count(s) for s in set(suggs) if s is not None}
                         R[bi] -= args.beta * np.array([1.0 if s is None else (n[s] - 1) / (args.G - 1) for s in suggs])
                     D_all.append(len({texts[bi * args.G + j] for j in range(args.G)}))
+                    L_all.append(bool(ls))
                     H_all.append((sum(s in good for s in suggs), len(good)))
                 adv = (R - R.mean(1, keepdims=True)) / (R.std(1, keepdims=True) + 1e-4)
                 stats = llm.update(out, P, adv.reshape(-1))
@@ -312,6 +328,10 @@ def main():
                        kl=stats["kl"])
             if C_all:
                 upd.update(update_copy=float(np.mean(C_all)))
+            if args.memory_share < 1:  # distinct texts of 8 on prompts with and without a listing
+                d, l = np.array(D_all, float), np.array(L_all, bool)
+                upd.update(group_distinct_listed=float(d[l].mean()) if l.any() else None,
+                           group_distinct_unlisted=float(d[~l].mean()) if (~l).any() else None)
         with open(os.path.join(args.out, "rounds.jsonl"), "a") as f:
             for r in recs:
                 f.write(json.dumps(r) + "\n")
@@ -325,7 +345,8 @@ def main():
         if e + 1 in save_epochs:
             llm.model.save_pretrained(os.path.join(args.out, f"adapter_e{e + 1}"))
         json.dump(dict(next_epoch=e + 1, codes=codes.tolist(), spec=comm.spec.tolist(), rng=rng.bit_generator.state,
-                       trng=trng.bit_generator.state, urng=urng.bit_generator.state, lrng=lrng.bit_generator.state),
+                       trng=trng.bit_generator.state, urng=urng.bit_generator.state, lrng=lrng.bit_generator.state,
+                       mrng=mrng.bit_generator.state),
                   open(state_path + ".tmp", "w"))
         os.replace(state_path + ".tmp", state_path)
         print(json.dumps(upd), f"{time.time() - t0:.0f}s", flush=True)

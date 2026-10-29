@@ -27,7 +27,9 @@ ARMS = [("frozen", "Full answer, never updated", "#b8b6ad", "--"), ("thumbsT2", 
         ("frozenE3M3", "Edit, best of 3, never updated", "#e66b8f", "-"), ("spreadE3T2", "Edit, spread reward", "#3b8fd6", "-"),
         ("dupE3T2", "Edit, duplicate penalty", "#2aa3a3", "-"), ("rateE3T2", "Edit, signed rating", "#8a5a44", "-"),
         ("crowdT2", "Full answer, crowding penalty", "#c03b2b", "--"), ("dupT2", "Full answer, duplicate penalty", "#7a4fb8", "--"),
-        ("memthumbsE3T2", "Edit + memory, thumbs", "#1f2f8a", "-"), ("memdupE3T2", "Edit + memory, duplicate penalty", "#b0127a", "-")]
+        ("memthumbsE3T2", "Edit + memory, thumbs", "#1f2f8a", "-"), ("memdupE3T2", "Edit + memory, duplicate penalty", "#b0127a", "-"),
+        ("memmix50E3T2", "Edit + memory on 50%, thumbs there, dup elsewhere", "#1baf7a", "-"),
+        ("memmix25E3T2", "Edit + memory on 25%, thumbs there, dup elsewhere", "#eda100", "-")]
 ORACLES = [("results/p4a_cost/shift0.5", "none"), ("results/p4a_cost/shift0.5", "pcc"),
            ("results/p4a_cost/shift0.5", "rad3"), ("results/p4a_grid/shift0.5", "leap_3_10"),
            ("results/p4a_cost/shift0.5", "rnd1"), ("results/p4a_cost/shift0.5", "rnd3"),
@@ -126,7 +128,10 @@ for a, b in [("frozenE3", "frozen"), ("thumbsE3T2", "thumbsT2"), ("thumbsE3T2", 
              ("crowdT2", "thumbsT2"), ("crowdT2", "frozen"), ("crowdT2", "rndfull"),
              ("dupT2", "thumbsT2"), ("dupT2", "rndfull"), ("dupT2", "crowdT2"),
              ("memthumbsE3T2", "thumbsE3T2"), ("memthumbsE3T2", "rnd3"), ("memdupE3T2", "dupE3T2"),
-             ("memdupE3T2", "rnd3"), ("memdupE3T2", "memthumbsE3T2")]:
+             ("memdupE3T2", "rnd3"), ("memdupE3T2", "memthumbsE3T2"),
+             ("memmix50E3T2", "rnd3"), ("memmix50E3T2", "memdupE3T2"), ("memmix50E3T2", "memthumbsE3T2"),
+             ("memmix25E3T2", "rnd3"), ("memmix25E3T2", "memdupE3T2"), ("memmix25E3T2", "memthumbsE3T2"),
+             ("memmix50E3T2", "memmix25E3T2")]:
     done = [x[0] for x in arms]
     if a not in done or not (b in done or b in orc):
         continue
