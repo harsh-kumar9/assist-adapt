@@ -1033,3 +1033,35 @@ epoch 0, untrained model: 98% of requests had a listing; 58% of answers copied a
 rounds; 62% of update samples at T 2); copies helped 7.3%, other answers 4.7%; diversity in the last 20 rounds
 1.80 (same model without memory 2.66, no AI 4.45, PCC 1.34); fitness 0.548 (without memory 0.552). Submitted
 memthumbsE3T2 and memdupE3T2, seeds 0-5, with --gen-batch 256 (jobs 427538-427549, grace).
+
+### Round 2 results: signed rating, duplicate penalty on full answers (2026-10-29; jobs 427124-427135)
+
+6 seeds, shift 0.5, epochs 3-20, paired by seed (scripts/analysis/p4b_interface.py, p4b_same_askers.py;
+figures/p4b_interface). Diversity in Hamming units vs no AI; fitness and next problem in % of no-AI fitness.
+
+| arm | diversity | fitness while assisted | next problem | helps | distinct answers | repeats |
+|---|---|---|---|---|---|---|
+| edit, signed rating (rateE3T2) | -0.07 | -6.9% | -3.5% | 1.8% | 18% | 96% |
+| full answer, duplicate penalty (dupT2) | -0.08 | +20.0% | +2.8% | 5.2% | 85% | 2% |
+| full answer, thumbs (thumbsT2) | -0.92 | -1.1% | -8.9% | | | |
+| random full answer (rndfull, same seeds) | +0.49 | +15.3% | +0.6% | | | |
+
+Contrasts: rateE3T2 - thumbsE3T2 div -0.12 (p=0.29), fit -4.9 (p=0.29), next -0.9 (p=0.76); rateE3T2 - rnd3 fit
+-19.6 (p=0.007). dupT2 - thumbsT2 div +0.84 (p=0.036), fit +21.1 (p=0.028), next +11.7 (p=0.028); dupT2 -
+rndfull div -0.57 (p=0.12), fit +4.7 (p=0.27), next +2.2 (p=0.54); dupT2 - crowdT2 fit +22.5 (p=0.004), next
++8.0 (p=0.044). Help rate on each run's own requests: rateE3T2 1.8% vs rnd3 6.0% (below random in all 6 seeds,
+-3.3 to -5.2 points); dupT2 5.3% vs rndfull 3.4% (+1.9; seeds 0, 2, 3 equal random to 0.1 point, seeds 1, 4, 5
++2.3 to +6.5).
+Reading:
+- The signed rating fails. It scores every answer, so every group has a gradient, and the model collapses to
+  one answer per approach: 96% of repeat requests get the same answer, which did not help the first time. It
+  helps a third as often as random edits on the same askers. Rewarding "less bad" pays for a safe answer, not
+  a helpful one. Edit size stayed near 3 (2.66), so the failure is not timidity.
+- The duplicate penalty also rescues full answers from collapse: +21 points over thumbs, with diversity and
+  next problem recovered. It ends about level with random full answers, as dupE3T2 did with random edits.
+  The three seeds that beat random on their own requests answer with a module another asker holds 5-8% of the
+  time (1.6-2.5% in the other seeds, about chance, which is roughly 20 held modules / 1024): copying what is
+  already in the culture, at a low rate, the same channel the memory screen found.
+- Across round 1 and 2: rewards that score unhelpful answers either make the model a random generator (dup,
+  both interfaces) or make it worse (crowd helps less, rate collapses). None beats random. Consistent with the
+  diagnosis that only knowing good modules can.

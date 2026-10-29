@@ -8,7 +8,9 @@ tlE3T2,"Tweak or leap, thumbs",6,3.132,0.03416,0.5333,-1.117,-7.427,0.0296,nan,n
 frozenE3M3,"Edit, best of 3, never updated",6,3.311,0.03665,0.2998,2.507,-2.996,nan,nan,nan,nan,nan
 spreadE3T2,"Edit, spread reward",6,2.88,0.03104,0.4424,4.596,-1.1,nan,nan,nan,nan,nan
 dupE3T2,"Edit, duplicate penalty",6,3.039,0.04152,0.8686,10.87,-3.19,nan,2.781,0.1699,0.07368,0.01599
+rateE3T2,"Edit, signed rating",6,2.881,0.01821,0.184,-6.931,-3.545,nan,2.661,0.03707,0.004304,0.9582
 crowdT2,"Full answer, crowding penalty",6,2.833,0.02999,0.2883,-2.47,-5.166,nan,4.793,0.07903,0.02821,0.6027
+dupT2,"Full answer, duplicate penalty",6,2.874,0.05152,0.8522,19.99,2.797,nan,4.931,0.1642,0.06409,0.02077
 oracle_none,none,6,2.951,nan,nan,0,0,nan,nan,nan,nan,nan
 oracle_pcc,pcc,6,1.866,nan,nan,17.54,-4.404,nan,nan,nan,nan,nan
 oracle_rad3,rad3,6,2.743,nan,nan,53.8,6.078,nan,nan,nan,nan,nan
