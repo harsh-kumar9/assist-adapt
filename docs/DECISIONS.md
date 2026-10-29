@@ -932,3 +932,73 @@ Round 1 done (jobs 426458-426469, grace, all 20 epochs). Shift 0.5, 6 seeds, epo
 Round 2 submitted after reading this, as planned (grace, jobs 427124-427135): rateE3T2 s0-5 (even) and dupT2
 s0-5 (odd). dupT2 is now the key one: does the duplicate penalty work on full answers, which start near
 collapse?
+
+### Getting past random: memory screen (Harsh, 2026-10-28: "meanwhile, brainstorm how to get past random"; plan ratified: "go ahead")
+
+Diagnosis (scripts/analysis/p4b_memory_sources.py, dupE3T2 logs and landscapes, epochs 3-19). At rho 1, K 9,
+M 10 every module choice depends on all the others, so the module part is a random lookup table: fitness
+correlation between a module and its 1-flip neighbour 0.00 (2 flips 0.00; Kauffman's K = N - 1 case). A
+module's value does not depend on the rest of the approach (corr 0.999), so what helps one team helps any worse
+team. After a 50% shift a module's value correlates 0.44 with its old value. So structure-based operators
+(crossover, differential evolution, PBIL/UMDA, step-size rules, bit priors) cannot beat random here, and neither
+can a reward change alone; only knowing which modules are good can. Help rate on dup's own requests (open loop):
+random edit 4.1%; a module that helped someone last epoch, within 3 flips, 7.8%; perfect memory of last epoch's
+problem 14.0%; the most recent module that helped someone this epoch, within 3 flips, 27.0% (98% of requests
+have one); another team's helpful edit applied to this team 9.9%; some edit helps 56%. The strong source is what
+helped others this epoch, i.e. copying through the assistant, the channel that narrows cultures (PCC -1.00).
+Target that exists: perfect-knowledge best edit <=3, +55% with no diversity loss.
+
+Step 1, ratified: screen memory assistants without the LLM in the P4a sim (rho 1, turnover 0.01, shift 0.5,
+200 seeds, CPU on grace). They see only what a provider has: the asker's approach and the log of which shown
+answers helped. Answer a remembered helpful module within 3 flips of the asker's, else a random edit of 1-3
+flips (rnd3). Arms: this-epoch memory (most recent); rarest in the culture (fitness sharing); quota (a module
+leaves memory after 3 teams adopted it from the assistant); 4 separate memories (team i in group i mod 4);
+memory used with probability 0.25 / 0.5, else random; last epoch's memory only (the analog of per-epoch
+retraining). Compare with rnd3, best edit <=3 (rad3), PCC, no AI. Step 2 after reading it: the winning design
+as memory in the LLM's prompt with the dup reward, next to fine-tuning on thumbs-up data as the realistic
+baseline.
+
+### Memory screen, results (2026-10-28; jobs 427296, 427303, grace CPU; results/p4a_mem/shift0.5)
+
+rho 1, turnover 0.01, shift 0.5, 200 seeds, epochs 3-20, paired with no AI (scripts/analysis/p4a_mem.py,
+figures/p4a_mem, results/summary/p4a_mem.csv). Memory assistants in src/culture.py (Memory class). After the
+first job I added six arms (other mixing rates; mixing with quota or separate memories; last epoch mixed) and a
+split of help rates by source, then reran all memory arms (identical fitness; checked seed 0). Diagnosis
+numbers: the repo script gives 8.1% for "last epoch's log" (7.8% in the entry above; random draws).
+
+| design | diversity vs no AI | fitness while assisted | next problem | answers that help (memory / random) |
+|---|---|---|---|---|
+| memory always | -0.16 | +10.8% | +3.0% | 6.3% (7.0 / 17.9) |
+| memory on 75% of answers, else random edit | -0.20 | +22.5% | +3.5% | 8.9% (11.4 / 3.7) |
+| 50% | -0.09 | +24.0% | +4.5% | 8.4% (14.5 / 3.1) |
+| 25% | -0.02 | +22.5% | +4.3% | 7.0% (19.0 / 3.2) |
+| 10% | +0.06 | +19.4% | +4.4% | 5.4% (23.4 / 3.5) |
+| 50%, 3 adoptions each | -0.01 | +19.3% | +4.4% | |
+| 50%, 4 separate memories | -0.06 | +22.3% | +5.4% | |
+| 25%, 3 adoptions each | +0.07 | +19.3% | +5.1% | |
+| always, rarest in culture | -0.15 | +8.3% | +1.7% | |
+| always, 3 adoptions each | -0.07 | +16.1% | +3.9% | |
+| always, 4 separate memories | -0.15 | +17.1% | +2.8% | |
+| last epoch, always | -0.04 | +0.9% | -0.5% | 3.4% |
+| last epoch, 25% | +0.12 | +18.2% | +5.2% | 4.3% |
+| random edit | +0.14 | +15.2% | +4.9% | 3.8% |
+| best edit <=3 (perfect knowledge) | -0.01 | +55.3% | +10.9% | 7.9% |
+| best answer in culture (PCC) | -1.00 | +20.2% | +2.2% | |
+
+vs random edits (paired, 95% CI): memory always fit -4.4 [-5.6, -3.1], div -0.30, next -2.0 [-3.4, -0.6];
+50% fit +8.8 [+7.6, +10.0], div -0.24, next -0.5 n.s.; 25% fit +7.4 [+6.1, +8.6], div -0.17, next -0.6 n.s.;
+10% fit +4.3, div -0.08; last epoch always fit -14.3, next -5.5; last epoch 25% fit +3.0 [+1.9, +4.2], div -0.02.
+Quota and separate memories on top of mixing: fit -1.6 to -4.7, div +0.04 to +0.09, i.e. the same trade as
+using memory less (25% with quota = 10% plain: +19.3 / +0.07 vs +19.4 / +0.06).
+Reading:
+- Memory alone is a copying channel: it beats random on help rate (6.3% vs 3.8%) but loses on fitness and
+  narrows the culture, like PCC on a small scale. Mixed with random edits it beats random by 4 to 9 points while
+  assisted, at about the no-AI level of diversity at 25% or less, with no detectable later cost or gain.
+  Random edits find new good modules, memory spreads them; each needs the other (explore vs exploit, March 1991).
+- Still far below perfect knowledge (+55%). Memory gets about a fifth of the way from random to best edit.
+- What a once-per-epoch retrained model could know (last epoch) is weak: worse than random if always used,
+  +3 if mixed in.
+- Per answer, a remembered module helps far more often than a random edit at every mixing rate (e.g. 14.5% vs
+  3.1% at 50%). So a learner rewarded per answer (thumbs) should copy more and more, toward "always", the worst
+  design here: the individually best answer is not the best for the culture (Rogers 1988; Rendell et al. 2010).
+  This is a prediction for the LLM, not yet a result.

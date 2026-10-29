@@ -164,8 +164,68 @@ def advise_random(codes, F, idx, name, rng):
     return best
 
 
-def round_with(codes, F, comm, assistant, use, p_social, rng):
-    if assistant not in ("gated", "rhelp", "maxp", "maxh", "minp") and not assistant.startswith(("rad", "rnd", "x_", "leap_", "rec_")):
+class Memory:
+    """mem_<when>_<pref>[_p<pct>][_q<n>][_i<g>]: an assistant blind to the landscape that knows only what a
+    provider logs, which of its answers helped. It answers a remembered helpful module within 3 flips of the
+    asker's own (not the same), else a random edit of 1-3 flips (rnd3). Any answer that helps is remembered.
+    when    now: modules that helped some team earlier this epoch; last: those of the previous epoch only
+            (what a model retrained once per epoch could know)
+    pref    recent: the most recently helpful; rare: the one the fewest teams hold (fitness sharing);
+            any: one at random
+    p<pct>  use memory with this probability (percent), else a random edit
+    q<n>    a module is no longer answered once n teams adopted it from the assistant this epoch
+    i<g>    g separate memories; team i is served by memory i mod g"""
+    REACH = 3
+
+    def __init__(self, name):
+        parts = name.split("_")
+        self.when, self.pref = parts[1], parts[2]
+        opt = {s[0]: int(s[1:]) for s in parts[3:]}
+        self.p, self.quota, self.groups = opt.get("p", 100) / 100, opt.get("q", 0), opt.get("i", 1)
+        self.now = [{} for _ in range(self.groups)]  # module -> round it last helped
+        self.last = [{} for _ in range(self.groups)]
+        self.t, self.used, self.used_helped = 0, 0, 0
+
+    def new_epoch(self):
+        self.last, self.now = self.now, [{} for _ in range(self.groups)]
+        self.adopted = [{} for _ in range(self.groups)]  # module -> teams that adopted it from the assistant
+
+    def advise(self, codes, idx, rng):
+        out = advise_random(codes, None, idx, "rnd3", rng)
+        self.src = np.zeros(len(idx), bool)  # answered from memory
+        use = rng.random(len(idx)) < self.p
+        held = np.bincount(codes & MC, minlength=1 << M)
+        for g in range(self.groups):
+            mem = (self.now if self.when == "now" else self.last)[g]
+            mods = np.array([m for m in mem if not self.quota or self.adopted[g].get(m, 0) < self.quota], np.int64)
+            sel = np.flatnonzero(use & (idx % self.groups == g))
+            if not len(mods) or not len(sel):
+                continue
+            d = POP[mods[None, :] ^ (codes[idx[sel], None] & MC)]
+            ok = (d >= 1) & (d <= self.REACH)
+            recent = np.array([mem[m] for m in mods], float)
+            score = {"recent": recent[None, :], "rare": -held[mods][None, :] + recent[None, :] / (self.t + 1),
+                     "any": rng.random(ok.shape)}[self.pref]
+            pick = np.argmax(np.where(ok, score, -np.inf), 1)
+            has = ok.any(1)
+            out[sel[has]] = (codes[idx[sel[has]]] & ~MC) | mods[pick[has]]
+            self.src[sel[has]] = True
+        return out
+
+    def learn(self, idx, prop, helped):
+        self.used += int(self.src.sum())
+        self.used_helped += int((helped & self.src).sum())
+        for i, m in zip(idx[helped], prop[helped] & MC):
+            g, m = i % self.groups, int(m)
+            self.now[g][m] = self.t
+            self.adopted[g][m] = self.adopted[g].get(m, 0) + 1
+        self.t += 1
+
+
+def round_with(codes, F, comm, assistant, use, p_social, rng, mem=None, log=None):
+    """One round with an assistant answering the teams that ask. `mem`: a Memory, which also learns which
+    answers helped; `log` collects (answers given, answers that helped)."""
+    if mem is None and assistant not in ("gated", "rhelp", "maxp", "maxh", "minp") and not assistant.startswith(("rad", "rnd", "x_", "leap_", "rec_")):
         return step(codes, F, comm, assistant, use, p_social, M, rng)
     n = len(codes)
     u_social, u_query, u_ai = rng.random(n), rng.random(n), rng.random(n)
@@ -179,7 +239,9 @@ def round_with(codes, F, comm, assistant, use, p_social, rng):
     prop = np.where(social, codes[np.minimum(best_nb, n - 1)], prop)
     idx = np.flatnonzero(query)
     if len(idx):
-        if assistant == "gated":
+        if mem is not None:
+            prop[idx] = mem.advise(codes, idx, rng)
+        elif assistant == "gated":
             prop[idx] = advise_gated(codes, fit, F, idx, u_ai[idx], prop)
         elif assistant.startswith("x_"):
             prop[idx] = advise_grid(codes, fit, F, idx, u_ai, prop, assistant)
@@ -191,6 +253,11 @@ def round_with(codes, F, comm, assistant, use, p_social, rng):
             prop[idx] = advise_random(codes, F, idx, assistant, rng)
         else:
             prop[idx] = advise_ideal(codes, fit, F, idx, u_ai[idx], prop, assistant)
+        helped = F[prop[idx]] > fit[idx]
+        if mem is not None:
+            mem.learn(idx, prop[idx], helped)
+        if log is not None:
+            log.append((len(idx), int(helped.sum())))
     return np.where(F[prop] > fit, prop, codes)
 
 
@@ -209,10 +276,15 @@ def run(job):
     T = epochs * rounds
     fit, div, mods = np.zeros(T, np.float32), np.zeros(T, np.float32), np.zeros(T, np.int16)
     next_off, next_end = np.zeros(epochs, np.float32), np.zeros(epochs, np.float32)
+    helps, mem_use, mem_help, rnd_help = (np.full(epochs, np.nan, np.float32) for _ in range(4))
+    mem = Memory(assistant) if assistant.startswith("mem_") else None
     for e in range(epochs):
         F = lands[e].F
+        log = []
+        if mem is not None:
+            mem.new_epoch()
         for t in range(rounds):
-            codes = round_with(codes, F, comm, assistant if assistant != "none" else "none", use, 0.1, rng)
+            codes = round_with(codes, F, comm, assistant if assistant != "none" else "none", use, 0.1, rng, mem, log)
             leave = np.flatnonzero(trng.random(len(codes)) < mu)
             if len(leave):
                 codes[leave] = trng.integers(0, 2 ** N, len(leave), dtype=np.int64)
@@ -221,6 +293,14 @@ def run(job):
             k = e * rounds + t
             fit[k], div[k] = F[codes].mean(), mean_pairwise_hamming(codes, N)
             mods[k] = len(np.unique(codes & MC))
+        if log:
+            asked, helped = np.sum(log, 0)
+            helps[e] = helped / asked
+            if mem is not None:
+                mem_use[e] = mem.used / asked
+                mem_help[e] = mem.used_helped / max(mem.used, 1)
+                rnd_help[e] = (helped - mem.used_helped) / max(asked - mem.used, 1)
+                mem.used = mem.used_helped = 0
         # next problem with the assistant removed, from this epoch's end state (own draws; as in P4b)
         prng = np.random.default_rng([seed, 7, e, 1, 0])
         pc, vals = codes.copy(), []
@@ -228,7 +308,8 @@ def run(job):
             pc = step(pc, lands[e + 1].F, comm, "none", 0.0, 0.1, M, prng)
             vals.append(lands[e + 1].F[pc].mean())
         next_off[e], next_end[e] = np.mean(vals), vals[-1]
-    return dict(fit=fit, div=div, mods=mods, next_off=next_off, next_end=next_end)
+    out = dict(fit=fit, div=div, mods=mods, next_off=next_off, next_end=next_end, helps=helps)
+    return out if mem is None else dict(out, mem_use=mem_use, mem_help=mem_help, rnd_help=rnd_help)
 
 
 def main():
