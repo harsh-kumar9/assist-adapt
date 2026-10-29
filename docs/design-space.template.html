@@ -399,11 +399,11 @@ a { color: var(--accent); }
 <div class="frame"><table>
 <tr><th>Option</th><th>Reward</th><th>Grounding</th><th>Status</th></tr>
 <tr><td>Thumbs, gain, pick one of two, + KL</td><td>see above</td><td>RLHF narrows output diversity <span class="refs">(Kirk et al. 2024; Padmakumar &amp; He 2024)</span></td><td><span class="chip llm">LLM</span></td></tr>
-<tr><td>P- and H-creativity</td><td>see above</td><td><span class="refs">Boden 1990; novelty search (Lehman &amp; Stanley 2011)</span></td><td><span class="chip llm">LLM</span> <span class="chip no">no effect</span></td></tr>
+<tr><td>P- and H-creativity</td><td>see above</td><td><span class="refs">Boden 1990; novelty search (Lehman &amp; Stanley 2011a)</span></td><td><span class="chip llm">LLM</span> <span class="chip no">no effect</span></td></tr>
 <tr><td>Local</td><td><span class="tex">h\,\mathbb 1[d(a,m_i)\le k]</span></td><td>as bounded edit</td><td><span class="chip llm">LLM</span> <span class="chip no">no effect</span></td></tr>
 <tr><td>Edit cost</td><td><span class="tex">h\,g-\kappa\,d(a,m_i)</span></td><td>Assistance dilemma <span class="refs">(Koedinger &amp; Aleven 2007)</span></td><td><span class="chip idea">proposed</span></td></tr>
 <tr><td>Fitness sharing</td><td><span class="tex">\dfrac{h\,g}{1+\sum_{c\in C}n(c)\max\{0,1-d(x_i',c)/\sigma\}}</span>; over the team's neighbours only in the local version</td><td>Sharing in genetic algorithms <span class="refs">(Goldberg &amp; Richardson 1987)</span>; seedlings die near adults of their kind <span class="refs">(Janzen 1970)</span>; kill-the-winner <span class="refs">(Thingstad 2000)</span></td><td><span class="chip oracle">oracle</span> ideal</td></tr>
-<tr><td>Local competition</td><td><span class="tex">h\cdot\mathbb 1\bigl[F(x_i')&gt;\max_{c\in C\cap B(x_i',\rho)}F(c)\bigr]</span></td><td>Quality-diversity <span class="refs">(Lehman &amp; Stanley 2011; Mouret &amp; Clune 2015; Pugh, Soros &amp; Stanley 2016)</span></td><td><span class="chip oracle">oracle</span> ideal</td></tr>
+<tr><td>Local competition</td><td><span class="tex">h\cdot\mathbb 1\bigl[F(x_i')&gt;\max_{c\in C\cap B(x_i',\rho)}F(c)\bigr]</span></td><td>Quality-diversity <span class="refs">(Lehman &amp; Stanley 2011b; Mouret &amp; Clune 2015; Pugh, Soros &amp; Stanley 2016)</span></td><td><span class="chip oracle">oracle</span> ideal</td></tr>
 <tr><td>Count bonus over history</td><td><span class="tex">h\,g+\beta\,h/\sqrt{1+N_{\text{past}}(x_i')}</span></td><td>Count-based exploration <span class="refs">(Bellemare et al. 2016; Song, Kempe &amp; Munos 2025)</span></td><td><span class="chip idea">proposed</span></td></tr>
 <tr><td>Set-level, per epoch</td><td><span class="tex">R_i=h_ig_i/(1+m_i)</span>, <span class="tex">m_i</span> = other askers this epoch who ended within <span class="tex">\delta</span> of <span class="tex">x_i'</span></td><td>Rewarding a set of generations, not one <span class="refs">(Li et al. 2025; Hamid et al. 2025; Walder &amp; Karkhanis 2025)</span>. Needs groups across askers, not per prompt</td><td><span class="chip llm">LLM</span> <span class="tex">\delta=0</span>, without <span class="tex">g</span>: +6.6 over thumbs (p = 0.08); it can differ from thumbs only in the few groups with two different helpful answers (see above), and whether the gain is real is open</td></tr>
 <tr><td>Allocation target</td><td><span class="tex">R_{\text{epoch}}=\sum_i h_ig_i-\lambda\,\mathrm{KL}(\hat p\,\|\,p^*)</span>, <span class="tex">\hat p</span> = share of teams per basin</td><td>Division of cognitive labour <span class="refs">(Kitcher 1990; Weisberg &amp; Muldoon 2009; Alexander, Himmelreich &amp; Thompson 2015)</span></td><td><span class="chip idea">proposed</span></td></tr>
@@ -466,17 +466,21 @@ a { color: var(--accent); }
 <li>Banerjee (1992). A simple model of herd behavior. <i>QJE</i>. <a href="https://doi.org/10.2307/2118364">10.2307/2118364</a></li>
 <li>Barnard &amp; Sibly (1981). Producers and scroungers. <i>Animal Behaviour</i>. <a href="https://doi.org/10.1016/S0003-3472(81)80117-0">10.1016/S0003-3472(81)80117-0</a></li>
 <li>Bellemare et al. (2016). Unifying count-based exploration and intrinsic motivation. <i>NIPS</i>. <a href="https://arxiv.org/abs/1606.01868">arXiv:1606.01868</a></li>
+<li>Bengio, Jain, Korablyov, Precup &amp; Bengio (2021). Flow network based generative models for non-iterative diverse candidate generation. <i>NeurIPS</i>. <a href="https://arxiv.org/abs/2106.04399">arXiv:2106.04399</a></li>
 <li>Beyer &amp; Schwefel (2002). Evolution strategies: a comprehensive introduction. <i>Natural Computing</i>. <a href="https://doi.org/10.1023/A:1015059928466">10.1023/A:1015059928466</a></li>
 <li>Bikhchandani, Hirshleifer &amp; Welch (1992). A theory of fads, fashion, custom, and cultural change as informational cascades. <i>JPE</i>. <a href="https://doi.org/10.1086/261849">10.1086/261849</a></li>
-<li>Boden (1990; 2nd ed. 2004). <i>The Creative Mind: Myths and Mechanisms</i>. Routledge.</li>
+<li>Bjork (1994). Memory and metamemory considerations in the training of human beings. In <i>Metacognition: Knowing about Knowing</i>, MIT Press. <a href="https://doi.org/10.7551/mitpress/4561.003.0011">10.7551/mitpress/4561.003.0011</a></li>
 <li>Blundell, Uria, Pritzel, Li, Ruderman, Leibo, Rae, Wierstra &amp; Hassabis (2016). Model-free episodic control. <a href="https://arxiv.org/abs/1606.04460">arXiv:1606.04460</a></li>
+<li>Boden (1990; 2nd ed. 2004). <i>The Creative Mind: Myths and Mechanisms</i>. Routledge.</li>
 <li>Bolton &amp; Harris (1999). Strategic experimentation. <i>Econometrica</i>. <a href="https://doi.org/10.1111/1468-0262.00022">10.1111/1468-0262.00022</a></li>
 <li>Bommasani, Creel, Kumar, Jurafsky &amp; Liang (2022). Picking on the same person: does algorithmic monoculture lead to outcome homogenization? <i>NeurIPS</i>. <a href="https://doi.org/10.52202/068431-0265">10.52202/068431-0265</a></li>
 <li>Boyd &amp; Richerson (1985). <i>Culture and the Evolutionary Process</i>. University of Chicago Press.</li>
 <li>Carbonell &amp; Goldstein (1998). The use of MMR, diversity-based reranking for reordering documents and producing summaries. <i>SIGIR</i>. <a href="https://doi.org/10.1145/290941.291025">10.1145/290941.291025</a></li>
 <li>Chaney, Stewart &amp; Engelhardt (2018). How algorithmic confounding in recommendation systems increases homogeneity and decreases utility. <i>RecSys</i>. <a href="https://doi.org/10.1145/3240323.3240370">10.1145/3240323.3240370</a></li>
 <li>Che &amp; Hörner (2018). Recommender systems as mechanisms for social learning. <i>QJE</i> 133(2). <a href="https://doi.org/10.1093/qje/qjx044">10.1093/qje/qjx044</a></li>
+<li>Chen et al. (2025). Pass@k training for adaptively balancing exploration and exploitation of large reasoning models. <a href="https://arxiv.org/abs/2508.10751">arXiv:2508.10751</a></li>
 <li>Chesson (2000). Mechanisms of maintenance of species diversity. <i>Annu. Rev. Ecol. Syst.</i> <a href="https://doi.org/10.1146/annurev.ecolsys.31.1.343">10.1146/annurev.ecolsys.31.1.343</a></li>
+<li>de la Maza &amp; Tidor (1993). An analysis of selection procedures with particular attention paid to proportional and Boltzmann selection. <i>Proc. 5th ICGA</i>, 124–131.</li>
 <li>Derex &amp; Boyd (2016). Partial connectivity increases cultural accumulation within groups. <i>PNAS</i>. <a href="https://doi.org/10.1073/pnas.1518798113">10.1073/pnas.1518798113</a></li>
 <li>Doshi &amp; Hauser (2024). Generative AI enhances individual creativity but reduces the collective diversity of novel content. <i>Science Advances</i>. <a href="https://doi.org/10.1126/sciadv.adn5290">10.1126/sciadv.adn5290</a></li>
 <li>Enquist, Eriksson &amp; Ghirlanda (2007). Critical social learning: a solution to Rogers's paradox of nonadaptive culture. <i>American Anthropologist</i> 109(4). <a href="https://doi.org/10.1525/aa.2007.109.4.727">10.1525/aa.2007.109.4.727</a></li>
@@ -484,18 +488,23 @@ a { color: var(--accent); }
 <li>Fazelpour, O'Brien &amp; Rubin (2026). Navigating epistemic monocultures in AI-driven science: a simulation study. <a href="https://arxiv.org/abs/2608.19390">arXiv:2608.19390</a></li>
 <li>Fisher (1930). <i>The Genetical Theory of Natural Selection</i>. Clarendon Press.</li>
 <li>Fleming (2001). Recombinant uncertainty in technological search. <i>Management Science</i>. <a href="https://doi.org/10.1287/mnsc.47.1.117.10671">10.1287/mnsc.47.1.117.10671</a></li>
+<li>Glover (1989). Tabu search—Part I. <i>ORSA Journal on Computing</i> 1(3). <a href="https://doi.org/10.1287/ijoc.1.3.190">10.1287/ijoc.1.3.190</a></li>
+<li>Goldberg (1989). <i>Genetic Algorithms in Search, Optimization and Machine Learning</i>. Addison-Wesley.</li>
 <li>Goldberg &amp; Richardson (1987). Genetic algorithms with sharing for multimodal function optimization. <i>Proc. 2nd ICGA</i>, 41–49.</li>
 <li>Hamid, Orney, Xu, Finn &amp; Sadigh (2025). Polychromic objectives for reinforcement learning. <a href="https://arxiv.org/abs/2509.25424">arXiv:2509.25424</a></li>
 <li>Hansen &amp; Ostermeier (2001). Completely derandomized self-adaptation in evolution strategies. <i>Evolutionary Computation</i> 9(2). <a href="https://doi.org/10.1162/106365601750190398">10.1162/106365601750190398</a></li>
 <li>Hao, Xu, Li &amp; Evans (2026). Artificial intelligence tools expand scientists' impact but contract science's focus. <i>Nature</i>. <a href="https://doi.org/10.1038/s41586-025-09922-y">10.1038/s41586-025-09922-y</a></li>
+<li>Hornby (2006). ALPS: the age-layered population structure for reducing the problem of premature convergence. <i>GECCO</i>. <a href="https://doi.org/10.1145/1143997.1144142">10.1145/1143997.1144142</a></li>
 <li>Janzen (1970). Herbivores and the number of tree species in tropical forests. <i>American Naturalist</i>. <a href="https://doi.org/10.1086/282687">10.1086/282687</a></li>
 <li>Kapur (2008). Productive failure. <i>Cognition and Instruction</i>. <a href="https://doi.org/10.1080/07370000802212669">10.1080/07370000802212669</a></li>
+<li>Kashtan &amp; Alon (2005). Spontaneous evolution of modularity and network motifs. <i>PNAS</i> 102(39). <a href="https://doi.org/10.1073/pnas.0503610102">10.1073/pnas.0503610102</a></li>
 <li>Kauffman &amp; Levin (1987). Towards a general theory of adaptive walks on rugged landscapes. <i>Journal of Theoretical Biology</i> 128(1). <a href="https://doi.org/10.1016/S0022-5193(87)80029-2">10.1016/S0022-5193(87)80029-2</a></li>
 <li>Kirk et al. (2024). Understanding the effects of RLHF on LLM generalisation and diversity. <i>ICLR</i>. <a href="https://arxiv.org/abs/2310.06452">arXiv:2310.06452</a></li>
 <li>Kitcher (1990). The division of cognitive labor. <i>Journal of Philosophy</i>. <a href="https://doi.org/10.2307/2026796">10.2307/2026796</a></li>
 <li>Kleinberg &amp; Raghavan (2021). Algorithmic monoculture and social welfare. <i>PNAS</i> 118(22). <a href="https://doi.org/10.1073/pnas.2018340118">10.1073/pnas.2018340118</a></li>
 <li>Koedinger &amp; Aleven (2007). Exploring the assistance dilemma in experiments with cognitive tutors. <i>Educ. Psychol. Rev.</i> <a href="https://doi.org/10.1007/s10648-007-9049-0">10.1007/s10648-007-9049-0</a></li>
 <li>Kremer, Mansour &amp; Perry (2014). Implementing the "wisdom of the crowd". <i>JPE</i>. <a href="https://doi.org/10.1086/676597">10.1086/676597</a></li>
+<li>Kulesza &amp; Taskar (2012). Determinantal point processes for machine learning. <i>Foundations and Trends in Machine Learning</i> 5(2–3). <a href="https://doi.org/10.1561/2200000044">10.1561/2200000044</a></li>
 <li>Laland (2004). Social learning strategies. <i>Learning &amp; Behavior</i> 32(1). <a href="https://doi.org/10.3758/BF03196002">10.3758/BF03196002</a></li>
 <li>Lazer &amp; Friedman (2007). The network structure of exploration and exploitation. <i>ASQ</i> 52(4). <a href="https://doi.org/10.2189/asqu.52.4.667">10.2189/asqu.52.4.667</a></li>
 <li>Lehman &amp; Stanley (2011a). Abandoning objectives: evolution through the search for novelty alone. <i>Evolutionary Computation</i> 19(2). <a href="https://doi.org/10.1162/EVCO_a_00025">10.1162/EVCO_a_00025</a></li>
@@ -509,20 +518,29 @@ a { color: var(--accent); }
 <li>Mouret &amp; Clune (2015). Illuminating search spaces by mapping elites. <a href="https://arxiv.org/abs/1504.04909">arXiv:1504.04909</a></li>
 <li>Orr (1998). The population genetics of adaptation: the distribution of factors fixed during adaptive evolution. <i>Evolution</i> 52(4). <a href="https://doi.org/10.1111/j.1558-5646.1998.tb01823.x">10.1111/j.1558-5646.1998.tb01823.x</a></li>
 <li>Padmakumar &amp; He (2024). Does writing with language models reduce content diversity? <i>ICLR</i>. <a href="https://arxiv.org/abs/2309.05196">arXiv:2309.05196</a></li>
+<li>Pétrowski (1996). A clearing procedure as a niching method for genetic algorithms. <i>Proc. IEEE ICEC</i>. <a href="https://doi.org/10.1109/ICEC.1996.542703">10.1109/ICEC.1996.542703</a></li>
 <li>Philippi &amp; Seger (1989). Hedging one's evolutionary bets, revisited. <i>TREE</i>. <a href="https://doi.org/10.1016/0169-5347(89)90138-9">10.1016/0169-5347(89)90138-9</a></li>
 <li>Posen &amp; Levinthal (2012). Chasing a moving target. <i>Management Science</i>. <a href="https://doi.org/10.1287/mnsc.1110.1420">10.1287/mnsc.1110.1420</a></li>
 <li>Pugh, Soros &amp; Stanley (2016). Quality diversity: a new frontier for evolutionary computation. <i>Frontiers in Robotics and AI</i>. <a href="https://doi.org/10.3389/frobt.2016.00040">10.3389/frobt.2016.00040</a></li>
 <li>Rendell, Boyd, Cownden, Enquist, Eriksson, Feldman, Fogarty, Ghirlanda, Lillicrap &amp; Laland (2010). Why copy others? Insights from the social learning strategies tournament. <i>Science</i> 328(5975). <a href="https://doi.org/10.1126/science.1184719">10.1126/science.1184719</a></li>
 <li>Rogers (1988). Does biology constrain culture? <i>American Anthropologist</i> 90(4). <a href="https://doi.org/10.1525/aa.1988.90.4.02a00030">10.1525/aa.1988.90.4.02a00030</a></li>
+<li>Rosin &amp; Belew (1997). New methods for competitive coevolution. <i>Evolutionary Computation</i> 5(1). <a href="https://doi.org/10.1162/evco.1997.5.1.1">10.1162/evco.1997.5.1.1</a></li>
 <li>Rzhetsky, Foster, Foster &amp; Evans (2015). Choosing experiments to accelerate collective discovery. <i>PNAS</i>. <a href="https://doi.org/10.1073/pnas.1509757112">10.1073/pnas.1509757112</a></li>
 <li>Siggelkow &amp; Levinthal (2003). Temporarily divide to conquer. <i>Organization Science</i>. <a href="https://doi.org/10.1287/orsc.14.6.650.24840">10.1287/orsc.14.6.650.24840</a></li>
+<li>Smith, Forrest &amp; Perelson (1993). Searching for diverse, cooperative populations with genetic algorithms. <i>Evolutionary Computation</i> 1(2). <a href="https://doi.org/10.1162/evco.1993.1.2.127">10.1162/evco.1993.1.2.127</a></li>
 <li>Song, Kempe &amp; Munos (2025). Outcome-based exploration for LLM reasoning. <a href="https://arxiv.org/abs/2509.06941">arXiv:2509.06941</a></li>
+<li>Strevens (2003). The role of the priority rule in science. <i>Journal of Philosophy</i> 100(2). <a href="https://doi.org/10.5840/jphil2003100224">10.5840/jphil2003100224</a></li>
+<li>Stützle &amp; Hoos (2000). MAX–MIN ant system. <i>Future Generation Computer Systems</i> 16(8). <a href="https://doi.org/10.1016/S0167-739X(00)00043-1">10.1016/S0167-739X(00)00043-1</a></li>
 <li>Thingstad (2000). Elements of a theory for the mechanisms controlling abundance, diversity, and biogeochemical role of lytic bacterial viruses in aquatic systems. <i>Limnol. Oceanogr.</i> <a href="https://doi.org/10.4319/lo.2000.45.6.1320">10.4319/lo.2000.45.6.1320</a></li>
+<li>Toffolo &amp; Benini (2003). Genetic diversity as an objective in multi-objective evolutionary algorithms. <i>Evolutionary Computation</i> 11(2). <a href="https://doi.org/10.1162/106365603766646816">10.1162/106365603766646816</a></li>
 <li>Uzzi, Mukherjee, Stringer &amp; Jones (2013). Atypical combinations and scientific impact. <i>Science</i>. <a href="https://doi.org/10.1126/science.1240474">10.1126/science.1240474</a></li>
+<li>Vickrey (1969). Congestion theory and transport investment. <i>American Economic Review</i> 59(2), 251–260.</li>
+<li>Wagner &amp; Altenberg (1996). Perspective: complex adaptations and the evolution of evolvability. <i>Evolution</i> 50(3). <a href="https://doi.org/10.1111/j.1558-5646.1996.tb02339.x">10.1111/j.1558-5646.1996.tb02339.x</a></li>
 <li>Walder &amp; Karkhanis (2025). Pass@K policy optimization. <i>NeurIPS</i>. <a href="https://arxiv.org/abs/2505.15201">arXiv:2505.15201</a></li>
 <li>Wegner (1987). Transactive memory: a contemporary analysis of the group mind. In <i>Theories of Group Behavior</i>, Springer. <a href="https://doi.org/10.1007/978-1-4612-4634-3_9">10.1007/978-1-4612-4634-3_9</a></li>
 <li>Weisberg &amp; Muldoon (2009). Epistemic landscapes and the division of cognitive labor. <i>Philosophy of Science</i>. <a href="https://doi.org/10.1086/644786">10.1086/644786</a></li>
 <li>Weitzman (1998). Recombinant growth. <i>QJE</i>. <a href="https://doi.org/10.1162/003355398555595">10.1162/003355398555595</a></li>
+<li>Whitley (1989). The GENITOR algorithm and selection pressure: why rank-based allocation of reproductive trials is best. <i>Proc. 3rd ICGA</i>, 116–121.</li>
 <li>Whitley, Rana &amp; Heckendorn (1997). Island model genetic algorithms and linearly separable problems. <i>LNCS</i> 1305. <a href="https://doi.org/10.1007/BFb0027170">10.1007/BFb0027170</a></li>
 <li>Wood, Bruner &amp; Ross (1976). The role of tutoring in problem solving. <i>J. Child Psychol. Psychiatry</i>. <a href="https://doi.org/10.1111/j.1469-7610.1976.tb00381.x">10.1111/j.1469-7610.1976.tb00381.x</a></li>
 <li>Wright (1932). The roles of mutation, inbreeding, crossbreeding and selection in evolution. <i>Proc. 6th Int. Congr. Genetics</i> 1, 356–366.</li>
