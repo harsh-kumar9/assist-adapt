@@ -1185,3 +1185,46 @@ memmix50E3T2 and memmix25E3T2, seeds 6-11, same code and flags as seeds 0-5 (src
 428486-428497, grace, 6 h limit). Read on 12 seeds: fitness while assisted and next problem vs random edits (sim rnd3
 on the same seeds), diversity vs no AI, copying and distinct-answer readouts. The no-memory and memory-always arms
 stay at seeds 0-5. The other setting (shift 0.2 or rho 0.8) is chosen after reading these, if the gain holds.
+
+### Step 3 on 12 seeds (2026-10-30; jobs 428486-428497)
+
+Both mix arms, seeds 0-11, same reading as the 6-seed entry (results/summary/p4b_memory_12seeds.csv,
+figures/p4b_mix_12seeds; `p4b_memory.py results/p4b_s05 memmix50E3T2 memmix25E3T2`). The 12 new runs took
+3.1-3.5 h each. Fitness is scaled by the no-AI mean over the 12 seeds, so seeds 0-5 read slightly differently from
+the 6-seed entry (+7.1 instead of +6.9 at 50%).
+
+| arm | diversity | fitness while assisted | next problem | helps (random edit, same askers) | listed | copies | copies help / others | modules in memory | distinct of 8, no listing / listing |
+|---|---|---|---|---|---|---|---|---|---|
+| memory on 50% (memmix50E3T2) | +0.03 | +22.6% | +4.8% | 8.0% (2.9%) | 47% | 92% | 14.4% / 1.8% | 37.3 | 7.89 / 1.86 |
+| memory on 25% (memmix25E3T2) | +0.00 | +20.7% | +3.2% | 6.7% (3.3%) | 24% | 88% | 18.8% / 2.5% | 55.0 | 7.92 / 2.41 |
+| random edit (sim rnd3, same 12 seeds) | +0.12 | +14.9% | +4.1% | | | | | | |
+
+Contrasts vs random edits, paired by seed, 95% CI:
+- 50%: fit +7.7 [+2.6, +12.9] (p=0.007; 9 of 12 seeds above; seeds 0-5 +7.1, 6-11 +8.4; epochs 12-20 +10.1,
+  p=0.013, 11 of 12). Next +0.7 [-5.8, +7.1] (p=0.83; seeds 0-5 +4.9, 6-11 -3.6). Div -0.09 [-0.30, +0.11] (p=0.35).
+- 25%: fit +5.9 [-1.0, +12.7] (p=0.088; 7 of 12), next -0.9 [-8.0, +6.2] (p=0.78), div -0.11 [-0.32, +0.09] (p=0.25).
+- 50% - 25%: fit +1.9 (p=0.52), next +1.6 (p=0.52), div +0.02 (p=0.84).
+Help on its own requests vs a random edit on the same askers: 50% +5.1 points, 25% +3.4, above in all 12 seeds.
+Sim, same designs on these 12 seeds, vs rnd3: 50% fit +10.0, next -0.0, div -0.09; 25% fit +8.8, next +2.8,
+div -0.14 (200 seeds: 50% +8.8, -0.5, -0.23; 25% +7.4, -0.6, -0.17).
+Reading:
+- The gain while assisted holds at 50%: +7.7 on 12 seeds, the same in both halves, about three quarters of what
+  the sim predicts on the same seeds (+10.0). Diversity stays at the no-AI level (+0.03), as the sim predicts.
+- The next-problem gain does not hold. Seeds 6-11 give -3.6, and the 12-seed mean is +0.7, which is what the sim
+  predicts (-0.0 on these seeds, -0.5 on 200). The +4.7 at 6 seeds was noise and I read too much into it in the
+  6-seed entry. What stands: the next problem is not hurt (+4.8 vs no AI, like random edits) and not helped
+  beyond random edits.
+- 25% is weaker and not separated from random edits (p=0.088), nor from 50% (+1.9, p=0.52).
+- On this setting the answer to the question is: with the provider setting the mix, the LLM helps more than
+  random edits while assisted, without narrowing the culture and without a cost on the next problem. It does not
+  leave the culture better able to adapt than random edits do.
+
+Next, proposed (not ratified): one other setting, rho 0.8 (shift 0.5), 50% arm only.
+- Why rho 0.8 rather than shift 0.2: the gain rests on a module that helped one team helping others. At rho 1 a
+  module's fitness depends only on its own 10 bits, so that is exactly true; at rho 0.8 each decision depends on 2
+  decisions in the other module, so a remembered module's value depends on the rest of the team's approach. That
+  is the assumption most likely to break. Shift 0.2 makes the next problem closer to the current one (oracle
+  reach-3 next problem +30% vs +11% at shift 0.5) and mostly rescales the next-problem readout.
+- Order: (1) sim screen at rho 0.8 and at shift 0.2 (none, rnd3, memory on 50% / 25% / always; 200 seeds; CPU
+  job on grace, minutes), since no rnd3 or memory reference exists at either; read whether the sim still predicts
+  a gain. (2) If it does at rho 0.8, memmix50E3T2 at rho 0.8, seeds 0-11 (12 runs, grace, ~12 h).
