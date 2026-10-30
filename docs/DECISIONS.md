@@ -1178,3 +1178,10 @@ Reading:
 Next, proposed (not ratified): firm up the headline with seeds 6-11 of both mix arms (12 runs, grace, ~10 h),
 reading fitness and next problem vs random edits on 12 seeds. After that, if it holds, one robustness check
 (shift 0.2 or rho 0.8) before writing it up.
+
+### Step 3, seeds 6-11 (2026-10-30; ratified: "Yes go ahead")
+
+memmix50E3T2 and memmix25E3T2, seeds 6-11, same code and flags as seeds 0-5 (src unchanged since 31f9b06; jobs
+428486-428497, grace, 6 h limit). Read on 12 seeds: fitness while assisted and next problem vs random edits (sim rnd3
+on the same seeds), diversity vs no AI, copying and distinct-answer readouts. The no-memory and memory-always arms
+stay at seeds 0-5. The other setting (shift 0.2 or rho 0.8) is chosen after reading these, if the gain holds.
