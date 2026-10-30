@@ -11,7 +11,8 @@ update samples on prompts with and without a listing, and diversity and fitness 
 seeds (P4a); fitness also vs random edits (rnd3).
 Summaries over epochs 3-20, paired by seed. Sim memory designs (P4a, 200 seeds) for reference.
 
-  python scripts/analysis/p4b_memory.py [results/p4b_s05]
+  python scripts/analysis/p4b_memory.py [results/p4b_s05] [arm ...]
+With arms named, only those are read, on every seed they all finished (outputs get a _<n>seeds suffix).
 """
 import json
 import os
@@ -25,11 +26,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from src.analyze import GRID, INK, MUTED, mark_panels, plt, save, write_rows  # noqa: E402
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "results/p4b_s05"
+ONLY = sys.argv[2:]
 ROUNDS, BURN, EPOCHS = 60, 2, 20
 ARMS = [("memthumbsE3T2", "Memory, thumbs", "#2a78d6", "-"), ("memdupE3T2", "Memory, duplicate penalty", "#eb6834", "-"),
         ("thumbsE3T2", "No memory, thumbs", "#2a78d6", "--"), ("dupE3T2", "No memory, duplicate penalty", "#eb6834", "--"),
         ("memmix50E3T2", "Memory on 50%, thumbs there, dup elsewhere", "#1baf7a", "-"),
         ("memmix25E3T2", "Memory on 25%, thumbs there, dup elsewhere", "#eda100", "-")]
+ARMS = [x for x in ARMS if not ONLY or x[0] in ONLY]
 POP = lambda x: bin(int(x)).count("1")
 
 
@@ -85,7 +88,7 @@ def load(d):
 
 runs = {}
 for a, *_ in ARMS:
-    for s in range(6):
+    for s in range(12):
         d = os.path.join(ROOT, f"{a}_s{s}")
         if os.path.exists(os.path.join(d, "DONE")):
             runs.setdefault(a, {})[s] = load(d)
@@ -132,7 +135,8 @@ for a, name, *_ in arms:
     if "copied" in row:
         print(f"{'':30s} copied by epoch: " + " ".join(f"{v:.2f}" for v in np.nanmean(per_epoch(a, "copied"), 0)))
 keys = list(dict.fromkeys(k for r in rows for k in r))
-write_rows([{k: r.get(k, float("nan")) for k in keys} for r in rows], "p4b_memory")
+SUF = f"_{len(seeds)}seeds" if ONLY else ""
+write_rows([{k: r.get(k, float("nan")) for k in keys} for r in rows], "p4b_memory" + SUF)
 
 print("\npaired contrasts, epochs 3-20 (diversity in Hamming units, fitness in % of no-AI fitness)")
 mix = ["memmix50E3T2", "memmix25E3T2"]
@@ -191,7 +195,8 @@ for ax in axes:
 fig.legend([plt.Line2D([], [], color=c, lw=1.4) for _, _, c, _ in mem_arms], ["Thumbs", "Duplicate penalty"][:len(mem_arms)],
            loc="outside lower center", ncol=2, fontsize=7, frameon=False)
 mark_panels(axes)
-save(fig, "p4b_memory")
+if mem_arms:
+    save(fig, "p4b_memory" + SUF)
 
 # Step 3: the provider sets the mix. (a) copying on prompts with a listing, by epoch; (b) distinct texts of 8 update
 # samples on prompts without one, by epoch; (c-e) per-seed means over epochs 3-20 of fitness while assisted and next
@@ -250,4 +255,4 @@ if mix_arms:
     ax["d"].set_ylabel("Next problem, AI removed,\nvs random edit (% of no AI)")
     ax["e"].set_ylabel("Culture diversity,\nvs no AI (Hamming)")
     mark_panels([ax[k] for k in "abcde"])
-    save(fig, "p4b_mix")
+    save(fig, "p4b_mix" + SUF)

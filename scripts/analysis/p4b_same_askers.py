@@ -17,7 +17,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from src.nk import Landscape  # noqa: E402
 
-ROOT, BURN, SEEDS = "results/p4b_s05", 2, range(6)
+ROOT, BURN = "results/p4b_s05", 2
 N, K, M = 20, 9, 10
 MC = (1 << M) - 1
 FLIPS = {k: np.array([sum(1 << b for b in c) for c in itertools.combinations(range(M), k)]) for k in (1, 2, 3)}
@@ -50,8 +50,9 @@ def help_rates(d):
 
 
 for arm in sys.argv[1:]:
-    a = np.array([help_rates(os.path.join(ROOT, f"{arm}_s{s}")) for s in SEEDS])
-    print(f"{arm}: help rate on its own requests, LLM {a[:, 0].mean():.4f} | rnd3 {a[:, 1].mean():.4f} | "
+    seeds = [s for s in range(12) if os.path.exists(os.path.join(ROOT, f"{arm}_s{s}", "DONE"))]
+    a = np.array([help_rates(os.path.join(ROOT, f"{arm}_s{s}")) for s in seeds])
+    print(f"{arm} ({len(seeds)} seeds): help rate on its own requests, LLM {a[:, 0].mean():.4f} | rnd3 {a[:, 1].mean():.4f} | "
           f"exactly 3 flips {a[:, 2].mean():.4f} | rndfull {a[:, 3].mean():.4f}")
     for j, name in ((1, "rnd3"), (3, "rndfull")):
         diff = a[:, 0] - a[:, j]
