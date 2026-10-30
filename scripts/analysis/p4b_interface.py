@@ -28,8 +28,8 @@ ARMS = [("frozen", "Full answer, never updated", "#b8b6ad", "--"), ("thumbsT2", 
         ("dupE3T2", "Edit, duplicate penalty", "#2aa3a3", "-"), ("rateE3T2", "Edit, signed rating", "#8a5a44", "-"),
         ("crowdT2", "Full answer, crowding penalty", "#c03b2b", "--"), ("dupT2", "Full answer, duplicate penalty", "#7a4fb8", "--"),
         ("memthumbsE3T2", "Edit + memory, thumbs", "#1f2f8a", "-"), ("memdupE3T2", "Edit + memory, duplicate penalty", "#b0127a", "-"),
-        ("memmix50E3T2", "Edit + memory on 50%, thumbs there, dup elsewhere", "#1baf7a", "-"),
-        ("memmix25E3T2", "Edit + memory on 25%, thumbs there, dup elsewhere", "#eda100", "-")]
+        ("memmix50E3T2", "Edit + memory on 50%", "#1baf7a", "-"),
+        ("memmix25E3T2", "Edit + memory on 25%", "#eda100", "-")]
 ORACLES = [("results/p4a_cost/shift0.5", "none"), ("results/p4a_cost/shift0.5", "pcc"),
            ("results/p4a_cost/shift0.5", "rad3"), ("results/p4a_grid/shift0.5", "leap_3_10"),
            ("results/p4a_cost/shift0.5", "rnd1"), ("results/p4a_cost/shift0.5", "rnd3"),

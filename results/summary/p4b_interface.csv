@@ -13,6 +13,8 @@ crowdT2,"Full answer, crowding penalty",6,2.833,0.02999,0.2883,-2.47,-5.166,nan,
 dupT2,"Full answer, duplicate penalty",6,2.874,0.05152,0.8522,19.99,2.797,nan,4.931,0.1642,0.06409,0.02077
 memthumbsE3T2,"Edit + memory, thumbs",6,2.961,0.03869,0.1572,-2.35,-3.865,nan,2.524,0.06623,0.007595,0.7737
 memdupE3T2,"Edit + memory, duplicate penalty",6,3.096,0.0442,0.8272,12.46,-1.471,nan,2.906,0.1621,0.07306,0.03019
+memmix50E3T2,Edit + memory on 50%,6,3.019,0.07771,0.5384,19.52,2.098,nan,2.778,0.1251,0.03262,0.1834
+memmix25E3T2,Edit + memory on 25%,6,2.936,0.06749,0.7181,17.64,0.9406,nan,2.865,0.1489,0.05277,0.05418
 oracle_none,none,6,2.951,nan,nan,0,0,nan,nan,nan,nan,nan
 oracle_pcc,pcc,6,1.866,nan,nan,17.54,-4.404,nan,nan,nan,nan,nan
 oracle_rad3,rad3,6,2.743,nan,nan,53.8,6.078,nan,nan,nan,nan,nan

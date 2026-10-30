@@ -42,9 +42,11 @@ def from_requests(d):
                            "n_copy", "n_copy_help", "n_other", "n_other_help")}
     for line in open(os.path.join(d, "requests.jsonl")):
         r, mem, p = json.loads(line), {}, []
-        rows = list(zip(r["t"], r["code"], r["answer"], r["helped"], r["n_listed"]))
-        for t in sorted(set(r["t"])):
-            cur = [x for x in rows if x[0] == t]
+        by_t = {}
+        for x in zip(r["t"], r["code"], r["answer"], r["helped"], r["n_listed"]):
+            by_t.setdefault(x[0], []).append(x)
+        for t in sorted(by_t):
+            cur = by_t[t]
             for _, code, ans, _, nl in cur:
                 m = code & 1023
                 near = sorted(((rr, x) for x, rr in mem.items() if 0 < POP(x ^ m) <= 3), key=lambda q: -q[0])[:3]
@@ -191,41 +193,61 @@ fig.legend([plt.Line2D([], [], color=c, lw=1.4) for _, _, c, _ in mem_arms], ["T
 mark_panels(axes)
 save(fig, "p4b_memory")
 
-# Step 3: the provider sets the mix. (a) copying on prompts with a listing, (b) distinct texts of 8 update samples
-# on prompts without one, (c) fitness while assisted vs random edits, (d) diversity vs no AI. Step-2 arms dashed.
+# Step 3: the provider sets the mix. (a) copying on prompts with a listing, by epoch; (b) distinct texts of 8 update
+# samples on prompts without one, by epoch; (c-e) per-seed means over epochs 3-20 of fitness while assisted and next
+# problem vs random edits, and diversity vs no AI, with the matching sim design (P4a, 200 seeds) as an open diamond.
 mix_arms = [x for x in arms if x[0] in mix]
 if mix_arms:
-    ref = [x for x in arms if x[0] in ("memthumbsE3T2", "memdupE3T2")]
-    fig, axes = plt.subplots(2, 2, figsize=(7.2, 4.6), layout="constrained")
-    axes = axes.ravel()
-    for (a, name, c, _), ls in [(x, "-") for x in mix_arms] + [(x, "--") for x in ref]:
-        lw = 1.4 if ls == "-" else 0.9
-        band(axes[0], per_epoch(a, "copied"), c, lw, ls, ls == "-")
-        k = "group_distinct_unlisted" if a in mix else "group_distinct"
-        band(axes[2], per_epoch(a, "fit") - scale["fit"] * (rnd3["fit"] - none["fit"]), c, lw, ls, ls == "-")
-        band(axes[3], per_epoch(a, "div"), c, lw, ls, ls == "-")
+    order = [x for x in arms if x[0] in ("memthumbsE3T2", "memdupE3T2")] + mix_arms
+    lab = {"memmix50E3T2": "Memory on 50%", "memmix25E3T2": "Memory on 25%", "memthumbsE3T2": "Always, thumbs",
+           "memdupE3T2": "Always, dup"}
+    # sim designs each arm approximates (results/summary/p4a_mem.csv): thumbs copies ~always, dup ~never (random edit)
+    simref = {"memthumbsE3T2": "mem_now_recent", "memdupE3T2": "rnd3", "memmix50E3T2": "mem_now_recent_p50",
+              "memmix25E3T2": "mem_now_recent_p25"}
+    simrows = {}
+    if os.path.exists("results/summary/p4a_mem.csv"):
+        import csv
+        for r in csv.DictReader(open("results/summary/p4a_mem.csv")):
+            simrows[r["design"]] = r
+    fig, ax = plt.subplot_mosaic([["a", "a", "a", "b", "b", "b"], ["c", "c", "d", "d", "e", "e"]],
+                                 figsize=(7.2, 4.8), layout="constrained")
+    for a, name, c, _ in order:
+        ls, lw = ("-", 1.4) if a in mix else ("--", 0.9)
+        band(ax["a"], per_epoch(a, "copied"), c, lw, ls, a in mix)
     for a, name, c, _ in mix_arms:
-        band(axes[1], per_epoch(a, "group_distinct_unlisted"), c)
-    for a, c in (("dupE3T2", "#eb6834"), ("thumbsE3T2", "#2a78d6")):
-        if a in runs and "group_distinct" in runs[a][seeds[0]]:
-            band(axes[1], per_epoch(a, "group_distinct"), c, 0.9, "--", False)
-    axes[0].plot(e, np.nanmean([np.nanmean(per_epoch(a, "chance"), 0) for a, *_ in mix_arms], 0), color=MUTED, lw=0.8, ls="--")
-    axes[0].set_ylim(0, 1)
-    axes[1].set_ylim(1, 8)
-    axes[0].set_ylabel("Answers copying a listed edit\n(prompts with a listing)")
-    axes[1].set_ylabel("Distinct answers of 8\n(prompts without a listing)")
-    axes[2].set_ylabel("Fitness while assisted, vs random edit\n(% of no-AI fitness)")
-    axes[3].set_ylabel("Culture diversity, vs no AI\n(Hamming)")
-    for ax in axes[2:]:
-        ax.axhline(0, color=GRID, lw=0.7, ls="--", zorder=0)
-    for ax in axes:
-        ax.set_xlabel("Epoch")
-        ax.set_xticks([1, 5, 10, 15, 20])
-        ax.axvspan(0.5, BURN + 0.5, color=GRID, alpha=0.4, lw=0, zorder=0)
-    lab = {"memmix50E3T2": "Memory on 50%", "memmix25E3T2": "Memory on 25%", "memthumbsE3T2": "Memory always, thumbs",
-           "memdupE3T2": "Memory always, duplicate penalty"}
-    fig.legend([plt.Line2D([], [], color=c, lw=1.4 if a in mix else 0.9, ls="-" if a in mix else "--")
-                for a, _, c, _ in mix_arms + ref], [lab[a] for a, *_ in mix_arms + ref],
-               loc="outside lower center", ncol=4, fontsize=7, frameon=False)
-    mark_panels(axes)
+        band(ax["b"], per_epoch(a, "group_distinct_unlisted"), c)
+    ax["a"].plot(e, np.nanmean([np.nanmean(per_epoch(a, "chance"), 0) for a, *_ in mix_arms], 0), color=MUTED, lw=0.8, ls=":")
+    ax["a"].set_ylim(0, 1)
+    ax["b"].set_ylim(1, 8.2)
+    ax["a"].set_ylabel("Answers copying a listed edit\n(prompts with a listing)")
+    ax["b"].set_ylabel("Distinct answers of 8 samples\n(prompts without a listing)")
+    for k in "ab":
+        ax[k].set_xlabel("Epoch")
+        ax[k].set_xticks([1, 5, 10, 15, 20])
+        ax[k].axvspan(0.5, BURN + 0.5, color=GRID, alpha=0.4, lw=0, zorder=0)
+    ax["a"].legend([plt.Line2D([], [], color=c, lw=1.4 if a in mix else 0.9, ls="-" if a in mix else "--")
+                    for a, _, c, _ in order] + [plt.Line2D([], [], color=MUTED, lw=0.8, ls=":")],
+                   [lab[a] for a, *_ in order] + ["Chance"], fontsize=6.5, frameon=False, loc="lower right", ncol=2)
+    rel = {"fit": lambda a: per_epoch(a, "fit") - scale["fit"] * (rnd3["fit"] - none["fit"]),
+           "next_off": lambda a: per_epoch(a, "next_off") - scale["next_off"] * (rnd3["next_off"] - none["next_off"]),
+           "div": lambda a: per_epoch(a, "div")}
+    simcol = {"fit": "fit_vs_none", "next_off": "next_off_vs_none", "div": "div_vs_none"}  # p4a_mem.csv
+    rng_j = np.random.default_rng(0)
+    for k, key in (("c", "fit"), ("d", "next_off"), ("e", "div")):
+        for xi, (a, name, c, _) in enumerate(order):
+            v = np.nanmean(rel[key](a)[:, BURN:], 1)
+            mu_, h = ci(v)
+            ax[k].scatter(xi + rng_j.uniform(-0.12, 0.12, len(v)), v, s=9, color=c, alpha=0.45, lw=0, zorder=2)
+            ax[k].errorbar(xi + 0.28, mu_, yerr=h, fmt="o", ms=4, color=c, lw=1.2, capsize=0, zorder=3)
+            sr = simrows.get(simref[a])
+            if sr is not None:
+                sv = float(sr[simcol[key]]) - (float(simrows["rnd3"][simcol[key]]) if key != "div" else 0)
+                ax[k].scatter(xi + 0.28, sv, marker="D", s=16, facecolor="white", edgecolor=INK, lw=0.8, zorder=4)
+        ax[k].axhline(0, color=GRID, lw=0.7, ls="--", zorder=0)
+        ax[k].set_xticks(range(len(order)), [lab[a] for a, *_ in order], rotation=35, ha="right", fontsize=6.5)
+        ax[k].set_xlim(-0.5, len(order) - 0.3)
+    ax["c"].set_ylabel("Fitness while assisted,\nvs random edit (% of no AI)")
+    ax["d"].set_ylabel("Next problem, AI removed,\nvs random edit (% of no AI)")
+    ax["e"].set_ylabel("Culture diversity,\nvs no AI (Hamming)")
+    mark_panels([ax[k] for k in "abcde"])
     save(fig, "p4b_mix")

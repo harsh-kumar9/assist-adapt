@@ -1132,3 +1132,49 @@ No GPU smoke: the model's path (render, sample, update) is the one memdupE3T2 ra
 Runs memmix50E3T2 and memmix25E3T2, seeds 0-5, edits <=3, update T 2, shift 0.5, --gen-batch 256, 6 h limit
 (jobs 427923-427934, grace; 3 waves of 4, about 11 h).
 Fixed-rule comparison (the provider copies on the memory share, no training there) deferred until these are read.
+
+### Step 3 results: the provider sets the mix (2026-10-30; jobs 427923-427934)
+
+6 seeds, shift 0.5, epochs 3-20, paired by seed (scripts/analysis/p4b_memory.py, p4b_same_askers.py,
+figures/p4b_mix, results/summary/p4b_memory.csv). All 12 runs finished (3.1-3.5 h). Diversity in Hamming units vs
+no AI; fitness and next problem in % of no-AI fitness. Copies are among answers to prompts with a listing.
+
+| arm | diversity | fitness while assisted | next problem | helps | listed | copies | copies help / others | modules in memory | distinct of 8, no listing / listing |
+|---|---|---|---|---|---|---|---|---|---|
+| memory on 50% (memmix50E3T2) | +0.07 | +19.5% | +2.1% | 7.8% | 47% | 91% | 14.1% / 1.6% | 37.4 | 7.88 / 1.83 |
+| memory on 25% (memmix25E3T2) | -0.02 | +17.6% | +0.9% | 6.8% | 24% | 86% | 19.2% / 2.7% | 57.8 | 7.93 / 2.78 |
+| memory always, thumbs | +0.01 | -2.4% | -3.9% | 3.9% | 71% | 83% | 5.3% / 1.6% | 14.5 | 2.69 (all prompts) |
+| memory always, duplicate penalty | +0.15 | +12.5% | -1.5% | 4.4% | 96% | 4.9% | 23.4% / 3.3% | 73.2 | 7.87 (all prompts) |
+| random edit (sim rnd3, same seeds) | +0.02 | +12.6% | -2.7% | | | | | | |
+
+Copying by epoch (prompts with a listing): 50%: 0.53 (untrained), 0.59, 0.65, 0.75, ... 0.99 in 6 of the last 9
+epochs; 25%: 0.43 to 0.93-0.98. It copies the first (most recently helpful) listing 96% of the time (memory always,
+thumbs: 88%). On prompts without a listing it helps 3.1% (50%) and 3.6% (25%), about a random edit's rate.
+Help rate on each run's own requests vs a random edit on the same askers: 50% 7.9% vs 2.9% (+4.9 points, all 6
+seeds), 25% 6.8% vs 3.4% (+3.4, all 6); memory always dup 4.4% vs 3.9%; memory always thumbs 3.8% vs 5.0%.
+Contrasts: memmix50 - rnd3 fit +6.9 (p=0.052; 5 of 6 seeds above; epochs 3-11 +4.3, 12-20 +9.3, p=0.014), next
++4.7 (p=0.042; 6 of 6), div +0.05 (p=0.62); memmix50 - memory always dup fit +7.1 (p=0.024), next +3.6 (p=0.059),
+div -0.08 (p=0.63); memmix50 - memory always thumbs fit +21.9 (p<0.001); memmix25 - rnd3 fit +5.0 (p=0.40; 3 of 6
+above), next +3.6 (p=0.44), div -0.04 (p=0.82); memmix25 - memory always dup fit +5.2 (p=0.17); memmix50 - memmix25
+fit +1.9 (p=0.70), div +0.08 (p=0.54).
+Sim, same designs (P4a, 200 seeds), vs random edit: 50% fit +8.8, 25% +7.4, always -4.4; next problem -0.5, -0.6,
+-2.0; diversity vs no AI -0.09, -0.02, -0.16 (random edit +0.14).
+Reading:
+- First LLM design here that beats random edits, by about what the sim predicted (+6.9 vs +8.8 at 50%; +5.0 vs
+  +7.4 at 25%, noisier), with the culture's diversity at the no-AI level. The next problem is not hurt: +4.7 vs
+  random edits, more than the sim's -0.5; part of that may be the driver's own offset (+1.8 [-0.1, +3.7] in the
+  random-edit check), and against memory-always dup in the same driver it is +3.6 (p=0.059).
+- One model learns both behaviours: on prompts with a listing, thumbs drives copying from 53% to ~99%, and what it
+  copies is the most recent listing, i.e. it learns the sim's rule; on prompts without one, the duplicate penalty
+  keeps it giving 7.9 distinct answers of 8 that help about as often as random edits. The provider's share sets
+  the mix; the learner does not have to find it, which step 2 showed it cannot.
+- Why copying pays here and not under memory-always thumbs: the exploring half keeps filling the memory (37 and 58
+  helpful modules per epoch vs 14.5), so copies help 14-19% vs 5%. Social learning pays only while individual
+  learning continues (Rogers 1988; Rendell et al. 2010); the provider keeps the two in separate prompts (March 1991).
+- Since the model copies the first listing 96% of the time, the fixed-rule comparison would test nearly the same
+  policy. I suggest dropping it.
+- Limits: 6 seeds (fitness p=0.052 at 50%), one model (Qwen3-4B), one setting (rho 1, shift 0.5, edits <=3).
+
+Next, proposed (not ratified): firm up the headline with seeds 6-11 of both mix arms (12 runs, grace, ~10 h),
+reading fitness and next problem vs random edits on 12 seeds. After that, if it holds, one robustness check
+(shift 0.2 or rho 0.8) before writing it up.
