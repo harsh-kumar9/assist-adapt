@@ -1228,3 +1228,42 @@ Next, proposed (not ratified): one other setting, rho 0.8 (shift 0.5), 50% arm o
 - Order: (1) sim screen at rho 0.8 and at shift 0.2 (none, rnd3, memory on 50% / 25% / always; 200 seeds; CPU
   job on grace, minutes), since no rnd3 or memory reference exists at either; read whether the sim still predicts
   a gain. (2) If it does at rho 0.8, memmix50E3T2 at rho 0.8, seeds 0-11 (12 runs, grace, ~12 h).
+
+### Sim screen at rho 0.8 and shift 0.2 (2026-10-30; ratified: "yes, run the sim screen first")
+
+src/culture.py unchanged since the shift-0.5 memory screen (md5 same on ada and local). 200 seeds, mu 0.01, use 0.5,
+designs none, rnd3, rad3, pcc, mem_now_recent, mem_now_recent_p75/p50/p25/p10. rho 0.8 at shift 0.5 ->
+results/p4a_mem/shift0.5/rho0.8_*; rho 1 at shift 0.2 -> results/p4a_mem/shift0.2/rho1_*. CPU on grace, jobs
+429273 (p4a_mem_r08) and 429274 (p4a_mem_s02). Read: memory on 50% and 25% minus rnd3, fitness while assisted,
+next problem, diversity. The LLM run at rho 0.8 waits on this and on a go.
+
+### Sim screen results at rho 0.8 and shift 0.2 (2026-10-30; jobs 429273, 429274)
+
+200 seeds, epochs 3-20, paired by seed (scripts/analysis/p4a_mem.py <dir> <rho>; results/summary/
+p4a_mem_shift0.5_rho0.8.csv, p4a_mem_shift0.2_rho1.csv; figures with the same suffixes). Both jobs completed (15
+and 11 min). Memory minus random edits, 95% CI; fitness in % of no-AI fitness, diversity in Hamming units.
+
+| setting | random edit vs no AI | memory 50%: assisted | next | diversity | memory 25%: assisted | next | diversity | memory always: assisted |
+|---|---|---|---|---|---|---|---|---|
+| rho 1, shift 0.5 (earlier) | +15.2 | +8.8 [+7.6, +10.0] | -0.5 | -0.23 | +7.4 [+6.1, +8.6] | -0.6 | -0.17 | -4.4 |
+| rho 0.8, shift 0.5 | +8.7 | +1.9 [+0.7, +3.1] | -1.3 | -0.17 | +2.7 [+1.6, +3.9] | +0.5 | -0.11 | -7.0 |
+| rho 1, shift 0.2 | +18.5 | +6.8 [+5.1, +8.5] | +1.2 | -0.19 | +5.2 [+3.4, +6.9] | +0.4 | -0.15 | -1.8 |
+
+Per answer at rho 0.8, 50%: memory helps 9.5%, random 3.6% (rho 1: 14.5% / 3.1%). Best edit (<=3) is still +50.4 over
+no AI at rho 0.8, so the headroom is there; memory does not reach it. Why: a module's fitness under one team's other
+half correlates 0.14 with its fitness under another's at rho 0.8 (0.999 at rho 1; 6 landscapes x 10 pairs of random
+other halves). What helped one team mostly does not carry to the next.
+Reading:
+- The memory gain depends on modules carrying across teams. At rho 0.8 memory on 50% beats random edits by 1.9, a
+  fifth of the rho 1 gain, and still narrows the culture a little (-0.17). Memory always is worse than at rho 1.
+- At shift 0.2 the picture is the same as at shift 0.5: +6.8 while assisted, next problem level with random edits.
+- For the LLM at rho 0.8: it reached about 3/4 of the sim's gain at rho 1, so the expected gain is about +1.5. On 12
+  seeds its interval is about +-5 (seed SD about 8), so a run there cannot tell it from random edits (it would need
+  well over 100 seeds). The sim already gives the answer.
+
+Next, proposed (not ratified):
+- Do not run the LLM at rho 0.8. Report rho 0.8 as a sim result: memory of what helped is worth little when a
+  module's value depends on the rest of the approach.
+- For the one LLM check in another setting: memmix50E3T2 at shift 0.2 (rho 1), seeds 0-11, grace, ~12 h; the
+  sim predicts +6.8, so about +5 for the LLM, which 12 seeds detect about half the time (24 seeds about 80%). The
+  rnd3 and none references at shift 0.2 now exist (results/p4a_mem/shift0.2). Or skip it and write up.

@@ -6,7 +6,8 @@ while assisted, fitness on the next problem with the assistant removed (mean of 
 that help (all, from memory, random fallback), share of answers taken from memory. Contrasts with random edits
 (rnd3) and with each variant's base design. Blue: memory used on a share of requests, else a random edit.
 
-  python scripts/analysis/p4a_mem.py [results/p4a_mem/shift0.5]
+  python scripts/analysis/p4a_mem.py [results/p4a_mem/shift0.5] [rho]
+Other settings than shift 0.5, rho 1 write their table and figure with a suffix (e.g. p4a_mem_shift0.5_rho0.8).
 """
 import os
 import sys
@@ -18,6 +19,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from src.analyze import GRID, INK, mark_panels, plt, save, write_rows  # noqa: E402
 
 D = sys.argv[1] if len(sys.argv) > 1 else "results/p4a_mem/shift0.5"
+RHO = sys.argv[2] if len(sys.argv) > 2 else "1"
+SUF = "" if (os.path.basename(D.rstrip("/")), RHO) == ("shift0.5", "1") else f"_{os.path.basename(D.rstrip('/'))}_rho{RHO}"
 ROUNDS, BURN = 60, 2
 MEMS = [("mem_now_recent", "This epoch, always", "#0d366b", None),
         ("mem_now_recent_p75", "This epoch, 75% of answers", "#1c5cab", None),
@@ -34,8 +37,8 @@ MEMS = [("mem_now_recent", "This epoch, always", "#0d366b", None),
         ("mem_last_any_p25", "Last epoch, 25%", "#6250d6", "mem_last_any")]
 REFS = [("rnd3", "Random edit (1-3 flips)"), ("rad3", "Best edit (≤3)"), ("pcc", "Best answer in culture")]
 
-z = {a: np.load(os.path.join(D, f"rho1_mu0.01_{a}.npz")) for a, *_ in MEMS + REFS + [("none",)]
-     if os.path.exists(os.path.join(D, f"rho1_mu0.01_{a}.npz"))}
+z = {a: np.load(os.path.join(D, f"rho{RHO}_mu0.01_{a}.npz")) for a, *_ in MEMS + REFS + [("none",)]
+     if os.path.exists(os.path.join(D, f"rho{RHO}_mu0.01_{a}.npz"))}
 mems = [x for x in MEMS if x[0] in z]
 refs = [x for x in REFS if x[0] in z]
 
@@ -71,7 +74,7 @@ for a, name, *_ in mems + refs:
     print(f"{name:32s} div {row['div_vs_none']:+.2f}±{row['div_ci']:.2f}  fit {row['fit_vs_none']:+6.1f}±{row['fit_ci']:.1f}%"
           f"  next {row['next_off_vs_none']:+5.1f}±{row['next_off_ci']:.1f}%  helps {row['helps']:.3f}"
           f"  (memory {row['mem_help']:.3f}, random {row['rnd_help']:.3f})  from memory {row['mem_use']:.2f}")
-write_rows(rows, "p4a_mem")
+write_rows(rows, "p4a_mem" + SUF)
 
 print("\npaired contrasts (diversity in Hamming units, fitness in % of no-AI fitness)")
 for a, _, _, base in mems:
@@ -103,4 +106,4 @@ for ax, k, lab in ((axes[0], "div", "Culture diversity\n(Hamming, vs no AI)"),
 axes[0].set_yticks(y, labels)
 axes[0].invert_yaxis()
 mark_panels(axes)
-save(fig, "p4a_mem")
+save(fig, "p4a_mem" + SUF)
