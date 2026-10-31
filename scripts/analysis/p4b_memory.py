@@ -13,6 +13,8 @@ Summaries over epochs 3-20, paired by seed. Sim memory designs (P4a, 200 seeds) 
 
   python scripts/analysis/p4b_memory.py [results/p4b_s05] [arm ...]
 With arms named, only those are read, on every seed they all finished (outputs get a _<n>seeds suffix).
+Runs at another shift than 0.5 (e.g. results/p4b_s02) are compared with the sim at that shift (results/p4a_mem/
+shift<x>, results/summary/p4a_mem_shift<x>_rho1.csv) and their outputs get a _shift<x> suffix.
 """
 import json
 import os
@@ -95,10 +97,13 @@ for a, *_ in ARMS:
 arms = [x for x in ARMS if x[0] in runs]
 seeds = sorted(set.intersection(*[set(runs[a]) for a, *_ in arms]))
 print(f"seeds {seeds} with all of: {', '.join(a for a, *_ in arms)}")
+SHIFT = json.load(open(os.path.join(ROOT, f"{arms[0][0]}_s{seeds[0]}", "config.json")))["shift"]
+SIMDIR, SIMCSV = (("results/p4a_cost/shift0.5", "results/summary/p4a_mem.csv") if SHIFT == 0.5 else
+                  (f"results/p4a_mem/shift{SHIFT:g}", f"results/summary/p4a_mem_shift{SHIFT:g}_rho1.csv"))
 
 
 def sim(name):
-    z = np.load(f"results/p4a_cost/shift0.5/rho1_mu0.01_{name}.npz")
+    z = np.load(f"{SIMDIR}/rho1_mu0.01_{name}.npz")
     ix = [int(np.where(z["seeds"] == s)[0][0]) for s in seeds]
     return dict(div=z["div"][ix].reshape(len(seeds), -1, ROUNDS)[:, :EPOCHS, -20:].mean(-1),
                 fit=z["fit"][ix].reshape(len(seeds), -1, ROUNDS)[:, :EPOCHS].mean(-1), next_off=z["next_off"][ix][:, :EPOCHS])
@@ -135,7 +140,7 @@ for a, name, *_ in arms:
     if "copied" in row:
         print(f"{'':30s} copied by epoch: " + " ".join(f"{v:.2f}" for v in np.nanmean(per_epoch(a, "copied"), 0)))
 keys = list(dict.fromkeys(k for r in rows for k in r))
-SUF = f"_{len(seeds)}seeds" if ONLY else ""
+SUF = (f"_{len(seeds)}seeds" if ONLY else "") + ("" if SHIFT == 0.5 else f"_shift{SHIFT:g}")
 write_rows([{k: r.get(k, float("nan")) for k in keys} for r in rows], "p4b_memory" + SUF)
 
 print("\npaired contrasts, epochs 3-20 (diversity in Hamming units, fitness in % of no-AI fitness)")
@@ -153,7 +158,7 @@ for a, b in [("memthumbsE3T2", "thumbsE3T2"), ("memdupE3T2", "dupE3T2"), ("memdu
         d = np.nanmean(per_epoch(a, k)[:, BURN:], 1) - np.nanmean(vb[:, BURN:], 1)
         out.append(f"{k} {d.mean():+.3f} (p={stats.ttest_1samp(d, 0).pvalue:.3f})")
     print(f"  {a} - {b}: " + "; ".join(out))
-if os.path.isdir("results/p4a_mem/shift0.5"):
+if SHIFT == 0.5 and os.path.isdir("results/p4a_mem/shift0.5"):
     print("\nsim references (P4a, 200 seeds, from results/summary/p4a_mem.csv): memory always fit +10.8%, div -0.16; "
           "50% fit +24.0%, div -0.09; random edit fit +15.2%, div +0.14")
 
@@ -206,13 +211,13 @@ if mix_arms:
     order = [x for x in arms if x[0] in ("memthumbsE3T2", "memdupE3T2")] + mix_arms
     lab = {"memmix50E3T2": "Memory on 50%", "memmix25E3T2": "Memory on 25%", "memthumbsE3T2": "Always, thumbs",
            "memdupE3T2": "Always, dup"}
-    # sim designs each arm approximates (results/summary/p4a_mem.csv): thumbs copies ~always, dup ~never (random edit)
+    # sim designs each arm approximates (SIMCSV): thumbs copies ~always, dup ~never (random edit)
     simref = {"memthumbsE3T2": "mem_now_recent", "memdupE3T2": "rnd3", "memmix50E3T2": "mem_now_recent_p50",
               "memmix25E3T2": "mem_now_recent_p25"}
     simrows = {}
-    if os.path.exists("results/summary/p4a_mem.csv"):
+    if os.path.exists(SIMCSV):
         import csv
-        for r in csv.DictReader(open("results/summary/p4a_mem.csv")):
+        for r in csv.DictReader(open(SIMCSV)):
             simrows[r["design"]] = r
     fig, ax = plt.subplot_mosaic([["a", "a", "a", "b", "b", "b"], ["c", "c", "d", "d", "e", "e"]],
                                  figsize=(7.2, 4.8), layout="constrained")

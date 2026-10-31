@@ -1267,3 +1267,13 @@ Next, proposed (not ratified):
 - For the one LLM check in another setting: memmix50E3T2 at shift 0.2 (rho 1), seeds 0-11, grace, ~12 h; the
   sim predicts +6.8, so about +5 for the LLM, which 12 seeds detect about half the time (24 seeds about 80%). The
   rnd3 and none references at shift 0.2 now exist (results/p4a_mem/shift0.2). Or skip it and write up.
+
+### The LLM at shift 0.2 (2026-10-30; ratified: "run the LLM at 20% shift, 12 seeds")
+
+memmix50E3T2 at shift 0.2 (rho 1), seeds 0-11, same flags as at shift 0.5 except --shift 0.2 (--reward dup
+--memory-reward thumbs --memory-share 0.50 --memory 3 --edits 3 --update-temperature 2 --gen-batch 256); src
+unchanged since 31f9b06 (md5 same on ada). Out results/p4b_s02, jobs 429335-429346, grace, 6 h limit; another
+user holds 2 of grace's 4 GPUs, so about 20 h if that stays. Read on 12 seeds: fitness while assisted, next problem
+and diversity vs the sim's rnd3 and none at shift 0.2 on the same seeds (results/p4a_mem/shift0.2); sim prediction
++6.8 while assisted, next +1.2. p4b_memory.py now reads the run's shift and picks the matching sim references
+(outputs get a _shift0.2 suffix); p4b_same_askers.py takes ROOT from the environment.

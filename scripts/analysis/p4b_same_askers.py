@@ -6,6 +6,7 @@ count uniform), exactly 3 flips, and a uniformly random module (rndfull). Rebuil
 its config. Only runs that log requests (dup, crowd, rate and later).
 
   python scripts/analysis/p4b_same_askers.py dupE3T2 crowdT2
+  ROOT=results/p4b_s02 python scripts/analysis/p4b_same_askers.py memmix50E3T2   (runs at another shift)
 """
 import itertools
 import json
@@ -17,7 +18,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from src.nk import Landscape  # noqa: E402
 
-ROOT, BURN = "results/p4b_s05", 2
+ROOT, BURN = os.environ.get("ROOT", "results/p4b_s05"), 2
 N, K, M = 20, 9, 10
 MC = (1 << M) - 1
 FLIPS = {k: np.array([sum(1 << b for b in c) for c in itertools.combinations(range(M), k)]) for k in (1, 2, 3)}
